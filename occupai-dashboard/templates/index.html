@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OccupAI Dashboard</title>
+  <meta name="description" content="OccupAI IoT Room Occupancy & Environmental Telemetry Dashboard">
+
+  <!-- Google Fonts (Poppins & Outfit) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome 6 Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom CSS with Cache Buster -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1002">
+</head>
+
+<body>
+
+  <div class="dashboard-viewport" id="app">
+
+    <!-- MOBILE TOP CURVED HEADER BANNER (Visible on mobile screens <= 767px) -->
+    <header class="mobile-header-banner md:hidden">
+      <button class="avatar-btn" title="User Profile">
+        <i class="fas fa-user text-gray-500"></i>
+      </button>
+
+      <div class="flex items-center gap-2">
+        <div class="logo-icon-wrap">
+          <i class="fas fa-wifi text-white text-xs"></i>
+        </div>
+        <span class="text-xl font-extrabold tracking-wide text-white">Occup<span class="text-amber-200">AI</span></span>
+      </div>
+
+      <button onclick="manualRefresh()" class="refresh-btn" title="Refresh Telemetry">
+        <i class="fas fa-rotate-right text-lg text-white" id="mobile-refresh-icon"></i>
+      </button>
+    </header>
+
+    <!-- LEFT SIDEBAR (Visible on desktop screens >= 768px) -->
+    <aside class="sidebar-container hidden md:flex">
+      <!-- Logo Box -->
+      <div class="logo-box">
+        <div class="logo-graphic flex items-center justify-center">
+          <svg width="48" height="30" viewBox="0 0 48 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="19" y="8" width="10" height="14" rx="5" fill="#E53935" />
+            <rect x="22" y="14" width="4" height="2" rx="1" fill="white" />
+            <path d="M15 9C13.5 10.8 13.5 19.2 15 21" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M10 6C7.5 9 7.5 21 10 24" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M5 3C1.5 7 1.5 23 5 27" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M33 9C34.5 10.8 34.5 19.2 33 21" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M38 6C40.5 9 40.5 21 38 24" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M43 3C46.5 7 46.5 23 43 27" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="logo-title">Occup<span class="logo-title-accent">AI</span></span>
+      </div>
+
+      <!-- Navigation Section -->
+      <div class="nav-section">
+        <div class="nav-header">NAVIGATION</div>
+        <nav class="nav-menu">
+          <button onclick="switchSPATab('dashboard')" class="nav-item active" id="nav-btn-dashboard">
+            <i class="fas fa-border-all text-base"></i>
+            <span>Dashboard</span>
+          </button>
+
+          <button onclick="switchSPATab('controls')" class="nav-item" id="nav-btn-controls">
+            <i class="fas fa-sliders text-base"></i>
+            <span>Utility Control</span>
+          </button>
+
+          <button onclick="switchSPATab('hardware')" class="nav-item" id="nav-btn-hardware">
+            <i class="fas fa-certificate text-base"></i>
+            <span>Hardware Status</span>
+          </button>
+
+          <button onclick="switchSPATab('history')" class="nav-item" id="nav-btn-history">
+            <i class="fas fa-clock-rotate-left text-base"></i>
+            <span>Logs/History</span>
+          </button>
+
+          <button onclick="switchSPATab('settings')" class="nav-item" id="nav-btn-settings">
+            <i class="fas fa-gear text-base"></i>
+            <span>Settings</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Sidebar User Profile Footer -->
+      <div class="user-account-section">
+        <div class="user-account-header">USER ACCOUNT</div>
+        <div class="user-profile-card">
+          <div class="user-avatar">
+            <i class="fas fa-user text-gray-500 text-sm"></i>
+          </div>
+          <div class="user-info">
+            <div class="user-name">Juan Dela Cruz</div>
+            <div class="user-role">Administrator</div>
+          </div>
+          <button class="user-menu-btn" title="User Options">
+            <i class="fas fa-ellipsis-vertical"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="main-panel">
+
+      <!-- VIEW 1: DASHBOARD VIEW -->
+      <div id="view-dashboard" class="spa-view h-full flex flex-col justify-between gap-3 overflow-hidden">
+
+        <!-- Mobile User Greeting (Mobile View) -->
+        <div class="md:hidden px-1 mt-0.5">
+          <h1 class="text-lg font-extrabold text-[#7D141D] tracking-tight">
+            Hello, Juan Dela Cruz!
+          </h1>
+        </div>
+
+        <!-- Desktop Header Bar -->
+        <header class="main-header hidden md:flex">
+          <h1 class="header-title">Dashboard</h1>
+          <div class="header-actions">
+            <button class="icon-circle-btn" title="Notifications">
+              <i class="fas fa-bell text-[#7D141D] text-sm"></i>
+            </button>
+            <button onclick="manualRefresh()" class="refresh-pill-btn" id="refresh-btn">
+              <span>Refresh</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- ROW 1: TOP 3 METRIC CARDS -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-3 flex-shrink-0">
+
+          <!-- Card 1: OCCUPANCY DATA -->
+          <div class="occupai-card hero-orange-card flex flex-col justify-between">
+            <div>
+              <div class="card-subtitle-white">OCCUPANCY DATA</div>
+              <div class="text-3xl lg:text-4xl font-black text-white mt-1 tracking-tight flex items-baseline gap-2">
+                <span id="occupancy-count">##</span>
+                <span class="text-2xl font-bold text-white">people</span>
+              </div>
+              <p class="text-xs text-white/90 font-medium mt-1">
+                are currently in <span id="occupancy-room" class="font-bold text-white">Room 313</span>
+              </p>
+            </div>
+            <div class="mt-3 flex items-center justify-start">
+              <span id="tier-badge" class="hero-pill-badge">TIER: MEDIUM (16-35)</span>
+            </div>
+          </div>
+
+          <!-- Card 2: ENVIRONMENT - TEMPERATURE -->
+          <div class="occupai-card metric-card-light flex flex-col justify-between">
+            <div class="card-subtitle-maroon">ENVIRONMENT - TEMPERATURE</div>
+            <div class="flex items-center justify-between my-1">
+              <div class="text-3xl font-black text-[#1A1A1A]" id="val-temperature">24.5°C</div>
+              <div class="thermometer-icon-wrapper">
+                <i class="fas fa-temperature-full text-3xl text-[#7D141D]"></i>
+              </div>
+            </div>
+            <div class="text-xs text-gray-500 font-medium">currently in Room 313</div>
+          </div>
+
+          <!-- Card 3: ENVIRONMENT - LUMINANCE -->
+          <div class="occupai-card metric-card-light flex flex-col justify-between">
+            <div class="card-subtitle-maroon">ENVIRONMENT - LUMINANCE</div>
+            <div class="space-y-1 my-1">
+              <div class="text-lg font-black text-[#1A1A1A]">
+                Indoor <span id="val-indoor-lux" class="font-black">480 lx</span>
+              </div>
+              <div class="text-lg font-black text-[#1A1A1A]">
+                Outdoor <span id="val-outdoor-lux" class="font-black">1200 lx</span>
+              </div>
+            </div>
+            <div class="text-xs text-gray-500 font-medium">currently in Room 313</div>
+          </div>
+
+        </section>
+
+        <!-- ROW 2: TREND CHART & HARDWARE STATUS -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-3 flex-1 min-h-0">
+
+          <!-- OCCUPANCY TREND - TODAY (7 Columns) -->
+          <div class="lg:col-span-7 occupai-card metric-card-light flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-1 relative">
+              <span class="card-subtitle-maroon" id="trend-card-title">OCCUPANCY TREND - TODAY</span>
+              
+              <div class="relative inline-block text-left" id="trend-dropdown-wrapper">
+                <button onclick="toggleTrendDropdown(event)" class="dropdown-pill" id="trend-dropdown-btn">
+                  TODAY <span id="trend-dropdown-arrow">▼</span>
+                </button>
+                
+                <!-- Dropdown Menu Box -->
+                <div id="trend-dropdown-menu" class="hidden trend-dropdown-menu">
+                  <div onclick="selectTrendRange('Today')" class="trend-dropdown-item">
+                    Today
+                  </div>
+                  <div onclick="selectTrendRange('Yesterday')" class="trend-dropdown-item">
+                    Yesterday
+                  </div>
+                  <div class="trend-dropdown-date-row">
+                    <span>Enter Date:</span>
+                    <input type="date" id="trend-custom-date" onchange="selectTrendCustomDate(this.value)" class="trend-dropdown-date-input">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-wrapper flex-1 min-h-0">
+              <div class="chart-y-axis-label">OCCUPANCY COUNT</div>
+              <div class="chart-canvas-box">
+                <canvas id="occupancyChart"></canvas>
+              </div>
+            </div>
+            <div class="chart-x-axis-label">TIME</div>
+          </div>
+
+          <!-- HARDWARE STATUS SUMMARY (5 Columns) -->
+          <div class="lg:col-span-5 occupai-card hw-gradient-card flex flex-col justify-between overflow-hidden">
+            <div>
+              <div class="card-subtitle-white">HARDWARE STATUS SUMMARY</div>
+              <div class="text-2xl font-black text-white mt-1 mb-2 tracking-tight" id="hw-summary-title">
+                # / # Online
+              </div>
+              <div class="space-y-1 text-xs" id="hw-nodes-list">
+                <!-- Dynamic hardware status items list -->
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ROW 3: UTILITY STATUS TABLE CARD -->
+        <section class="occupai-card utility-gradient-card flex-shrink-0">
+          <div class="card-subtitle-white mb-2">UTILITY STATUS — LIGHTING / BLINDS / AC</div>
+
+          <div class="overflow-x-auto">
+            <table class="utility-table w-full">
+              <thead>
+                <tr>
+                  <th class="text-left">Device</th>
+                  <th class="text-left">Status</th>
+                  <th class="text-left">Detail</th>
+                  <th class="text-right">Toggle</th>
+                </tr>
+              </thead>
+              <tbody id="utility-status-table-body">
+                <!-- JS dynamic table rows -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- VIEW 2: UTILITY CONTROL VIEW -->
+      <div id="view-controls" class="spa-view hidden space-y-3">
+        <!-- Desktop Header Bar -->
+        <header class="main-header hidden md:flex items-center justify-between">
+          <h1 class="header-title">Utility Control</h1>
+          <div class="header-actions">
+            <button class="icon-circle-btn" title="Notifications">
+              <i class="fas fa-bell text-[#7D141D] text-sm"></i>
+            </button>
+            <button onclick="manualRefresh()" class="refresh-pill-btn">
+              <span>Refresh</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Mode Hero Card -->
+        <section class="occupai-card hero-gradient-card">
+          <div class="flex items-start justify-between">
+            <div class="space-y-0.5">
+              <div class="card-subtitle-white">MODE</div>
+              <h2 class="text-2xl lg:text-3xl font-black text-white tracking-tight" id="control-mode-title">Automated Control</h2>
+              <p class="text-xs text-white/90 font-medium">
+                System is following occupancy-based rule logic.
+              </p>
+              <p class="text-[10px] text-amber-100/80 italic" id="last-auto-adj-text">
+                Last auto-adjustment: 2 min ago.
+              </p>
+            </div>
+            <button onclick="toggleControlMode()" class="revert-btn-white shadow-md hover:bg-amber-50 transition" id="revert-mode-btn">
+              Revert to Manual
+            </button>
+          </div>
+        </section>
+
+        <!-- Middle 3-Column Devices Grid -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          
+          <!-- Column 1: LIGHTING -->
+          <div class="occupai-card metric-card-light space-y-2">
+            <div class="card-subtitle-maroon">LIGHTING</div>
+            <div id="utility-lighting-container" class="space-y-2">
+              <!-- JS rendered lighting items -->
+            </div>
+          </div>
+
+          <!-- Column 2: BLIND -->
+          <div class="occupai-card metric-card-light space-y-2">
+            <div class="card-subtitle-maroon">BLIND</div>
+            <div id="utility-blinds-container" class="space-y-2">
+              <!-- JS rendered blinds items -->
+            </div>
+          </div>
+
+          <!-- Column 3: AIR CONDITIONING -->
+          <div class="occupai-card metric-card-light space-y-2">
+            <div class="card-subtitle-maroon">AIR CONDITIONING</div>
+            <div id="utility-ac-container" class="space-y-2">
+              <!-- JS rendered AC items -->
+            </div>
+          </div>
+
+        </section>
+
+        <!-- Bottom 2-Column Tables Grid -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-3">
+          
+          <!-- Left Table: OCCUPANCY-LINKED AUTOMATION REFERENCE (5 Cols) -->
+          <div class="lg:col-span-5 occupai-card metric-card-light space-y-1.5 flex flex-col justify-between">
+            <div>
+              <div class="card-subtitle-maroon mb-1.5">OCCUPANCY-LINKED AUTOMATION REFERENCE</div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="border-b border-gray-300 text-[10px] font-bold text-[#7D141D]">
+                      <th class="py-1 px-1.5">State</th>
+                      <th class="py-1 px-1.5 text-center">Threshold</th>
+                      <th class="py-1 px-1.5 text-center">Lighting</th>
+                      <th class="py-1 px-1.5 text-right">AC</th>
+                    </tr>
+                  </thead>
+                  <tbody id="automation-rules-rows" class="text-gray-700 font-medium"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="pt-1.5 border-t border-gray-300 text-[9px] text-[#7D141D] font-bold" id="current-tier-expectation-text"></div>
+          </div>
+
+          <!-- Right Table: RECENT OVERRIDE ACTIVITY (7 Cols) -->
+          <div class="lg:col-span-7 occupai-card metric-card-light space-y-1.5">
+            <div class="card-subtitle-maroon mb-1.5">RECENT OVERRIDE ACTIVITY</div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="border-b border-gray-300 text-[10px] font-bold text-[#7D141D]">
+                    <th class="py-1 px-1.5">Time</th>
+                    <th class="py-1 px-1.5">Device</th>
+                    <th class="py-1 px-1.5">Action</th>
+                    <th class="py-1 px-1.5">Status</th>
+                    <th class="py-1 px-1.5 text-right">By</th>
+                  </tr>
+                </thead>
+                <tbody id="override-activity-rows" class="text-gray-700 font-medium"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </section>
+
+      </div>
+
+      <!-- VIEW 3: HARDWARE STATUS VIEW -->
+      <div id="view-hardware" class="spa-view hidden space-y-3">
+
+        <!-- Desktop Header Bar -->
+        <header class="main-header hidden md:flex items-center justify-between">
+          <h1 class="header-title">Hardware Status</h1>
+          <div class="header-actions">
+            <button class="icon-circle-btn" title="Notifications">
+              <i class="fas fa-bell text-[#7D141D] text-sm"></i>
+            </button>
+            <button onclick="manualRefresh()" class="refresh-pill-btn">
+              <span>Refresh</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- 1. Top 3-Column Summary Bar -->
+        <section class="occupai-card hero-gradient-card">
+          <div class="grid grid-cols-3 divide-x divide-white/20 text-center py-1">
+            <div>
+              <div class="text-2xl lg:text-3xl font-black text-white" id="hw-status-summary-online">5 / 5</div>
+              <div class="text-[9px] text-white/80 font-extrabold uppercase mt-1">NODES ONLINE</div>
+            </div>
+            <div>
+              <div class="text-xl lg:text-2xl font-extrabold text-white">MQTT: Connected</div>
+              <div class="text-[9px] text-white/80 font-extrabold uppercase mt-1">BROKER STATUS</div>
+            </div>
+            <div>
+              <div class="text-2xl lg:text-3xl font-black text-white">0</div>
+              <div class="text-[9px] text-white/80 font-extrabold uppercase mt-1">ACTIVE FAULTS</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. 2-Column Hardware Nodes Grid -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          
+          <!-- Row 1 Left: Raspberry Pi 4 -->
+          <div class="occupai-card metric-card-light space-y-2 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between border-b border-gray-300 pb-1.5 mb-2">
+                <span class="font-extrabold text-[#7D141D] text-sm">Raspberry Pi 4 – Primary Node</span>
+                <span class="status-badge-green">• Online</span>
+              </div>
+              <div class="space-y-1.5 text-xs text-gray-700 font-medium">
+                <div class="flex justify-between border-b border-gray-200 pb-1">
+                  <span class="text-gray-500 font-bold">Role</span>
+                  <span class="font-bold text-[#7D141D]">Vision + IR break-beam processing</span>
+                </div>
+                <div class="flex justify-between border-b border-gray-200 pb-1">
+                  <span class="text-gray-500 font-bold">Uptime</span>
+                  <span class="font-bold text-gray-800">4h 12m</span>
+                </div>
+                <div class="flex justify-between pb-0.5">
+                  <span class="text-gray-500 font-bold">CPU / Temp</span>
+                  <span class="font-bold text-gray-800">22°C</span>
+                </div>
+              </div>
+            </div>
+            <button onclick="switchSPATab('history')" class="view-logs-btn">View Logs</button>
+          </div>
+
+          <!-- Row 1 Right: ESP32-S3 -->
+          <div class="occupai-card metric-card-light space-y-2 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between border-b border-gray-300 pb-1.5 mb-2">
+                <span class="font-extrabold text-[#7D141D] text-sm">ESP32-S3 N16R8</span>
+                <span class="status-badge-off">• Offline</span>
+              </div>
+              <div class="space-y-1.5 text-xs text-gray-700 font-medium">
+                <div class="flex justify-between border-b border-gray-200 pb-1">
+                  <span class="text-gray-500 font-bold">Role</span>
+                  <span class="font-bold text-[#7D141D]">PIR, Actuation</span>
+                </div>
+                <div class="flex justify-between pb-0.5">
+                  <span class="text-gray-500 font-bold">Uptime</span>
+                  <span class="font-bold text-gray-800">4h 12m</span>
+                </div>
+              </div>
+            </div>
+            <button onclick="switchSPATab('history')" class="view-logs-btn">View Logs</button>
+          </div>
+
+          <!-- Row 2 Left: Camera 1 -->
+          <div class="occupai-card metric-card-light space-y-1.5">
+            <div class="flex items-center justify-between border-b border-gray-300 pb-1.5 mb-1.5">
+              <span class="font-extrabold text-[#7D141D] text-sm">Camera 1</span>
+              <span class="status-badge-green">• Online</span>
+            </div>
+            <div class="space-y-1 text-xs font-medium">
+              <div class="flex justify-between border-b border-gray-200 pb-1">
+                <span class="text-gray-500 font-bold">Feed to</span>
+                <span class="font-bold text-[#7D141D]">Raspberry Pi 3 (CSI Port)</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500 font-bold">Uptime</span>
+                <span class="font-bold text-gray-800">4h 12m</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 2 Right: Camera 2 -->
+          <div class="occupai-card metric-card-light space-y-1.5">
+            <div class="flex items-center justify-between border-b border-gray-300 pb-1.5 mb-1.5">
+              <span class="font-extrabold text-[#7D141D] text-sm">Camera 2</span>
+              <span class="status-badge-green">• Online</span>
+            </div>
+            <div class="space-y-1 text-xs font-medium">
+              <div class="flex justify-between border-b border-gray-200 pb-1">
+                <span class="text-gray-500 font-bold">Feed to</span>
+                <span class="font-bold text-[#7D141D]">Raspberry Pi 3 (CSI Port)</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500 font-bold">Uptime</span>
+                <span class="font-bold text-gray-800">4h 12m</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 3 Left: HC-SR501 PIR Sensors -->
+          <div class="occupai-card metric-card-light space-y-2">
+            <div class="flex items-center justify-between border-b border-gray-300 pb-1.5">
+              <span class="font-extrabold text-[#7D141D] text-sm">HC-SR501 PIR Sensors</span>
+              <span class="status-badge-green">• 2/2 Online</span>
+            </div>
+            <div class="space-y-1.5">
+              <div class="sub-sensor-card flex items-center justify-between">
+                <span class="font-extrabold text-[#7D141D] text-xs">PIR Sensor 1</span>
+                <span class="text-[10px] font-bold text-emerald-600">• Online – last trigger 45 sec ago</span>
+              </div>
+              <div class="sub-sensor-card flex items-center justify-between">
+                <span class="font-extrabold text-[#7D141D] text-xs">PIR Sensor 2</span>
+                <span class="text-[10px] font-bold text-emerald-600">• Online – last trigger 12 sec ago</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 3 Right: IR Break-Beam Sensors -->
+          <div class="occupai-card metric-card-light space-y-2">
+            <div class="flex items-center justify-between border-b border-gray-300 pb-1.5">
+              <span class="font-extrabold text-[#7D141D] text-sm">IR Break-Beam Sensors</span>
+              <span class="status-badge-green">• 2/2 Online</span>
+            </div>
+            <div class="space-y-1.5">
+              <div class="sub-sensor-card flex items-center justify-between">
+                <span class="font-extrabold text-[#7D141D] text-xs">IR Sensor 1</span>
+                <span class="text-[10px] font-bold text-emerald-600">• Online – last crossing 45 sec ago</span>
+              </div>
+              <div class="sub-sensor-card flex items-center justify-between">
+                <span class="font-extrabold text-[#7D141D] text-xs">IR Sensor 2</span>
+                <span class="text-[10px] font-bold text-emerald-600">• Online – last crossing 12 sec ago</span>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+      </div>
+
+      <!-- VIEW 4: LOGS / HISTORY VIEW -->
+      <div id="view-history" class="spa-view hidden space-y-3">
+
+        <!-- Desktop Header Bar -->
+        <header class="main-header hidden md:flex items-center justify-between">
+          <h1 class="header-title">Logs / History</h1>
+          <div class="header-actions">
+            <button class="icon-circle-btn" title="Notifications">
+              <i class="fas fa-bell text-[#7D141D] text-sm"></i>
+            </button>
+            <button onclick="manualRefresh()" class="refresh-pill-btn">
+              <span>Refresh</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- 3 Sub-Tab Control Buttons -->
+        <div class="grid grid-cols-3 gap-2">
+          <button onclick="switchLogSubTab('occupancy')" id="log-tab-btn-occupancy" class="log-subtab-btn active">
+            Occupancy Logs
+          </button>
+          <button onclick="switchLogSubTab('actuation')" id="log-tab-btn-actuation" class="log-subtab-btn">
+            Actuation Events
+          </button>
+          <button onclick="switchLogSubTab('override')" id="log-tab-btn-override" class="log-subtab-btn">
+            Override Events
+          </button>
+        </div>
+
+        <!-- Top Gradient Filter Bar (5 Filter Controls) -->
+        <section class="occupai-card hero-gradient-card !p-2 !rounded-full">
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-2 items-center w-full">
+            
+            <!-- Filter 1: Date Filter -->
+            <div class="relative w-full" id="log-date-wrapper">
+              <button onclick="toggleLogFilter('date')" class="filter-pill-btn w-full flex items-center justify-between" id="log-date-btn">
+                <span class="truncate flex items-center gap-1 text-[11px]"><i class="far fa-calendar-alt text-[#7D141D]/70 text-xs"></i><span class="font-bold text-[#7D141D]/70 mr-0.5">Date:</span>Today</span> <span id="log-date-arrow" class="text-[10px] text-[#7D141D]">▼</span>
+              </button>
+              <div id="log-date-menu" class="hidden trend-dropdown-menu">
+                <div onclick="selectLogFilter('date', 'Today')" class="trend-dropdown-item">Today</div>
+                <div onclick="selectLogFilter('date', 'Yesterday')" class="trend-dropdown-item">Yesterday</div>
+                <div class="trend-dropdown-date-row">
+                  <span>Enter:</span>
+                  <input type="date" onchange="selectLogFilter('date', this.value)" class="trend-dropdown-date-input">
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter 2: From Time Filter -->
+            <div class="relative w-full" id="log-from-wrapper">
+              <button onclick="toggleLogFilter('from')" class="filter-pill-btn w-full flex items-center justify-between" id="log-from-btn">
+                <span class="truncate flex items-center gap-1 text-[11px]"><i class="far fa-clock text-[#7D141D]/70 text-xs"></i><span class="font-bold text-[#7D141D]/70 mr-0.5">From:</span>Start</span> <span id="log-from-arrow" class="text-[10px] text-[#7D141D]">▼</span>
+              </button>
+              <div id="log-from-menu" class="hidden time-picker-dropdown">
+                <div class="time-spinner-box">
+                  <input type="time" id="log-from-input" step="1" onchange="selectLogFilter('from', this.value)" class="time-picker-input">
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter 3: To Time Filter -->
+            <div class="relative w-full" id="log-to-wrapper">
+              <button onclick="toggleLogFilter('to')" class="filter-pill-btn w-full flex items-center justify-between" id="log-to-btn">
+                <span class="truncate flex items-center gap-1 text-[11px]"><i class="far fa-clock text-[#7D141D]/70 text-xs"></i><span class="font-bold text-[#7D141D]/70 mr-0.5">To:</span>End</span> <span id="log-to-arrow" class="text-[10px] text-[#7D141D]">▼</span>
+              </button>
+              <div id="log-to-menu" class="hidden time-picker-dropdown">
+                <div class="time-spinner-box">
+                  <input type="time" id="log-to-input" step="1" onchange="selectLogFilter('to', this.value)" class="time-picker-input">
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter 4: Event Type Filter -->
+            <div class="relative w-full" id="log-event-wrapper">
+              <button onclick="toggleLogFilter('event')" class="filter-pill-btn w-full flex items-center justify-between" id="log-event-btn">
+                <span class="truncate flex items-center gap-1 text-[11px]"><i class="fas fa-filter text-[#7D141D]/70 text-xs"></i><span class="font-bold text-[#7D141D]/70 mr-0.5">Event:</span>ALL</span> <span id="log-event-arrow" class="text-[10px] text-[#7D141D]">▼</span>
+              </button>
+              <div id="log-event-menu" class="hidden trend-dropdown-menu">
+                <div onclick="selectLogFilter('event', 'All')" class="trend-dropdown-item">All</div>
+                <div onclick="selectLogFilter('event', 'Entry')" class="trend-dropdown-item">Entry</div>
+                <div onclick="selectLogFilter('event', 'Exit')" class="trend-dropdown-item">Exit</div>
+                <div onclick="selectLogFilter('event', 'Presence Sustained')" class="trend-dropdown-item text-amber-700">Presence Sustained</div>
+                <div onclick="selectLogFilter('event', 'Room Vacated')" class="trend-dropdown-item text-amber-700">Room Vacated</div>
+                <div onclick="selectLogFilter('event', 'System Started')" class="trend-dropdown-item">System Started</div>
+              </div>
+            </div>
+
+            <!-- Filter 5: Search Input Pill -->
+            <div class="relative w-full col-span-2 md:col-span-1">
+              <div class="filter-pill-search-wrapper w-full flex items-center bg-white rounded-full px-3 py-1.5 shadow-sm border border-[#7D141D]/20 focus-within:ring-2 focus-within:ring-[#7D141D]/30 transition-all">
+                <i class="fas fa-search text-[#7D141D]/70 text-xs mr-2"></i>
+                <input type="text" id="log-search-input" onkeyup="filterLogRows(this.value)" placeholder="Search logs..." class="w-full text-xs font-semibold bg-transparent text-[#7D141D] placeholder-[#7D141D]/60 outline-none">
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- SUB-PANEL 1: OCCUPANCY LOGS -->
+        <div id="log-panel-occupancy" class="log-subpanel space-y-2">
+          <section class="occupai-card metric-card-light space-y-1.5">
+            <div class="card-subtitle-maroon">OCCUPANCY LOGS — SHOWING 10 OF 20 RECORDS</div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="border-b border-gray-300 text-[10px] font-bold text-[#7D141D]">
+                    <th class="py-1.5 px-1.5">Timestamp</th>
+                    <th class="py-1.5 px-1.5">Event</th>
+                    <th class="py-1.5 px-1.5 text-center">Count</th>
+                    <th class="py-1.5 px-1.5 text-center">Tier</th>
+                    <th class="py-1.5 px-1.5 text-right">Source</th>
+                  </tr>
+                </thead>
+                <tbody id="occupancy-logs-tbody" class="text-gray-700 font-medium"></tbody>
+              </table>
+            </div>
+
+            <div class="flex items-center justify-between pt-1.5 border-t border-gray-200 text-[10px] text-gray-600 font-bold">
+              <button class="px-2 py-0.5 rounded bg-gray-200 hover:bg-gray-300">&lt;</button>
+              <div class="flex items-center gap-1">
+                <span>Rows per page:</span>
+                <select class="bg-gray-100 border border-gray-300 rounded px-1.5 py-0.5 text-[10px] text-[#7D141D] font-bold">
+                  <option>10 ▼</option>
+                  <option>20 ▼</option>
+                </select>
+              </div>
+              <button class="px-2 py-0.5 rounded bg-gray-200 hover:bg-gray-300">&gt;</button>
+            </div>
+          </section>
+        </div>
+
+        <!-- SUB-PANEL 2: ACTUATION EVENTS -->
+        <div id="log-panel-actuation" class="log-subpanel hidden space-y-2">
+          <section class="occupai-card metric-card-light space-y-1.5">
+            <div class="card-subtitle-maroon">ACTUATION EVENTS — SHOWING 10 OF 20 RECORDS</div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="border-b border-gray-300 text-[10px] font-bold text-[#7D141D]">
+                    <th class="py-1.5 px-1.5">Timestamp</th>
+                    <th class="py-1.5 px-1.5">Device</th>
+                    <th class="py-1.5 px-1.5">Action</th>
+                    <th class="py-1.5 px-1.5 text-right">Result</th>
+                  </tr>
+                </thead>
+                <tbody id="actuation-events-tbody" class="text-gray-700 font-medium"></tbody>
+              </table>
+            </div>
+
+            <div class="flex items-center justify-between pt-1.5 border-t border-gray-200 text-[10px] text-gray-600 font-bold">
+              <button class="px-2 py-0.5 rounded bg-gray-200 hover:bg-gray-300">&lt;</button>
+              <div class="flex items-center gap-1">
+                <span>Rows per page:</span>
+                <select class="bg-gray-100 border border-gray-300 rounded px-1.5 py-0.5 text-[10px] text-[#7D141D] font-bold">
+                  <option>10 ▼</option>
+                  <option>20 ▼</option>
+                </select>
+              </div>
+              <button class="px-2 py-0.5 rounded bg-gray-200 hover:bg-gray-300">&gt;</button>
+            </div>
+          </section>
+        </div>
+
+        <!-- SUB-PANEL 3: OVERRIDE EVENTS -->
+        <div id="log-panel-override" class="log-subpanel hidden space-y-2">
+          <section class="occupai-card hero-orange-card">
+            <div class="grid grid-cols-4 divide-x divide-white/20 text-center py-0.5">
+              <div>
+                <div class="text-base sm:text-lg font-black text-white" id="override-stat-rate">96.4%</div>
+                <div class="text-[7px] sm:text-[8px] text-amber-100/85 font-extrabold uppercase mt-0.5">Override Success Rate</div>
+              </div>
+              <div>
+                <div class="text-base sm:text-lg font-black text-white" id="override-stat-total">27</div>
+                <div class="text-[7px] sm:text-[8px] text-amber-100/85 font-extrabold uppercase mt-0.5">Total Overrides Today</div>
+              </div>
+              <div>
+                <div class="text-base sm:text-lg font-black text-white" id="override-stat-failed">1</div>
+                <div class="text-[7px] sm:text-[8px] text-amber-100/85 font-extrabold uppercase mt-0.5">Failed Commands</div>
+              </div>
+              <div>
+                <div class="text-base sm:text-lg font-black text-white" id="override-stat-latency">1.3 sec</div>
+                <div class="text-[7px] sm:text-[8px] text-amber-100/85 font-extrabold uppercase mt-0.5">Avg. Override Latency</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="occupai-card metric-card-light space-y-1.5">
+            <div class="card-subtitle-maroon">OVERRIDE EVENTS — SHOWING 10 OF 20 RECORDS</div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="border-b border-gray-300 text-[10px] font-bold text-[#7D141D]">
+                    <th class="py-1.5 px-1.5">Timestamp</th>
+                    <th class="py-1.5 px-1.5">Device</th>
+                    <th class="py-1.5 px-1.5">Action</th>
+                    <th class="py-1.5 px-1.5 text-center">Issued By</th>
+                    <th class="py-1.5 px-1.5 text-center">Latency</th>
+                    <th class="py-1.5 px-1.5 text-right">Result</th>
+                  </tr>
+                </thead>
+                <tbody id="override-events-tbody" class="text-gray-700 font-medium"></tbody>
+              </table>
+            </div>
+
+            <div class="flex items-center justify-between pt-1.5 border-t border-gray-200 text-[10px] text-gray-600 font-bold">
+              <button class="px-2 py-0.5 rounded bg-gray-200 hover:bg-gray-300">&lt;</button>
+              <div class="flex items-center gap-1">
+                <span>Rows per page:</span>
+                <select class="bg-gray-100 border border-gray-300 rounded px-1.5 py-0.5 text-[10px] text-[#7D141D] font-bold">
+                  <option>10 ▼</option>
+                  <option>20 ▼</option>
+                </select>
+              </div>
+              <button class="px-2 py-0.5 rounded bg-gray-200 hover:bg-gray-300">&gt;</button>
+            </div>
+          </section>
+        </div>
+
+      </div>
+
+      <!-- VIEW 5: SETTINGS VIEW -->
+      <div id="view-settings" class="spa-view hidden space-y-3">
+
+        <!-- Desktop Header Bar -->
+        <header class="main-header hidden md:flex items-center justify-between">
+          <h1 class="header-title">Settings</h1>
+          <div class="header-actions">
+            <button class="icon-circle-btn" title="Notifications">
+              <i class="fas fa-bell text-[#7D141D] text-sm"></i>
+            </button>
+            <button onclick="manualRefresh()" class="refresh-pill-btn">
+              <span>Refresh</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Main Settings 2-Column Grid Layout (Left Sub-tabs + Right Content) -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+          
+          <!-- LEFT SIDEBAR: Sub-tab Navigation (3 Cols) -->
+          <div class="md:col-span-3 space-y-2">
+            <button onclick="switchSettingsSubTab('general')" id="set-tab-btn-general" class="set-subtab-btn active w-full text-left">
+              General Settings
+            </button>
+            <button onclick="switchSettingsSubTab('users')" id="set-tab-btn-users" class="set-subtab-btn w-full text-left">
+              User Accounts
+            </button>
+            <button onclick="switchSettingsSubTab('system')" id="set-tab-btn-system" class="set-subtab-btn w-full text-left">
+              System Info
+            </button>
+          </div>
+
+          <!-- RIGHT PANEL: Sub-tab Content Panels (9 Cols) -->
+          <div class="md:col-span-9 space-y-3">
+            
+            <!-- SECTION TITLE -->
+            <div class="card-subtitle-maroon text-xs tracking-widest font-black uppercase text-[#7D141D]" id="settings-section-title">
+              GENERAL SETTINGS
+            </div>
+
+            <!-- SUB-TAB 1: GENERAL SETTINGS -->
+            <div id="set-panel-general" class="set-subpanel space-y-3">
+
+              <!-- Occupancy Thresholds Card -->
+              <section class="occupai-card metric-card-light space-y-1.5">
+                <div class="card-subtitle-maroon">OCCUPANCY THRESHOLDS</div>
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr class="border-b border-gray-300 text-[10px] font-bold text-[#7D141D]">
+                        <th class="py-1 px-1.5">State</th>
+                        <th class="py-1 px-1.5 text-center">Min</th>
+                        <th class="py-1 px-1.5 text-center">Max</th>
+                        <th class="py-1 px-1.5 text-center">Lighting</th>
+                        <th class="py-1 px-1.5 text-right">AC Unit</th>
+                      </tr>
+                    </thead>
+                    <tbody class="text-gray-700 font-medium">
+                      <tr class="border-b border-gray-200">
+                        <td class="py-1.5 px-1.5 font-bold">Vacant</td>
+                        <td class="py-1.5 px-1.5 text-center font-mono">0</td>
+                        <td class="py-1.5 px-1.5 text-center font-mono">0</td>
+                        <td class="py-1.5 px-1.5 text-center font-bold text-gray-500">OFF</td>
+                        <td class="py-1.5 px-1.5 text-right font-bold text-gray-500">OFF</td>
+                      </tr>
+                      <tr class="border-b border-gray-200">
+                        <td class="py-1.5 px-1.5 font-bold">Low</td>
+                        <td class="py-1.5 px-1.5 text-center"><input type="text" value="1" class="w-10 text-center border border-gray-300 rounded px-1 py-0.5 text-xs font-bold text-[#7D141D]"></td>
+                        <td class="py-1.5 px-1.5 text-center"><input type="text" value="15" class="w-10 text-center border border-gray-300 rounded px-1 py-0.5 text-xs font-bold text-[#7D141D]"></td>
+                        <td class="py-1.5 px-1.5 text-center"><input type="text" value="40%" class="w-12 text-center border border-gray-300 rounded px-1 py-0.5 text-xs font-bold text-[#7D141D]"></td>
+                        <td class="py-1.5 px-1.5 text-right font-bold text-emerald-600">ON</td>
+                      </tr>
+                      <tr class="border-b border-gray-200">
+                        <td class="py-1.5 px-1.5 font-bold">Medium</td>
+                        <td class="py-1.5 px-1.5 text-center"><input type="text" value="16" class="w-10 text-center border border-gray-300 rounded px-1 py-0.5 text-xs font-bold text-[#7D141D]"></td>
+                        <td class="py-1.5 px-1.5 text-center"><input type="text" value="35" class="w-10 text-center border border-gray-300 rounded px-1 py-0.5 text-xs font-bold text-[#7D141D]"></td>
+                        <td class="py-1.5 px-1.5 text-center"><input type="text" value="70%" class="w-12 text-center border border-gray-300 rounded px-1 py-0.5 text-xs font-bold text-[#7D141D]"></td>
+                        <td class="py-1.5 px-1.5 text-right font-bold text-emerald-600">ON</td>
+                      </tr>
+                      <tr>
+                        <td class="py-1.5 px-1.5 font-bold">High</td>
+                        <td class="py-1.5 px-1.5 text-center"><input type="text" value="36" class="w-10 text-center border border-gray-300 rounded px-1 py-0.5 text-xs font-bold text-[#7D141D]"></td>
+                        <td class="py-1.5 px-1.5 text-center text-gray-400 font-bold">--</td>
+                        <td class="py-1.5 px-1.5 text-center"><input type="text" value="100%" class="w-12 text-center border border-gray-300 rounded px-1 py-0.5 text-xs font-bold text-[#7D141D]"></td>
+                        <td class="py-1.5 px-1.5 text-right font-bold text-emerald-600">ON</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="text-[10px] text-gray-500 italic pt-1">
+                  Changing thresholds affects rule-based automation logic in real time.
+                </div>
+              </section>
+
+              <!-- Device Labels Card -->
+              <section class="occupai-card metric-card-light space-y-1.5">
+                <div class="card-subtitle-maroon">DEVICE LABELS</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div class="flex items-center justify-between bg-white/60 p-1.5 rounded-lg border border-gray-200">
+                    <span class="text-gray-700 font-bold">Light 1</span>
+                    <input type="text" value="Front Right" class="w-24 text-center border border-gray-300 rounded-full py-0.5 text-xs font-bold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-1.5 rounded-lg border border-gray-200">
+                    <span class="text-gray-700 font-bold">Light 4</span>
+                    <input type="text" value="Middle Left" class="w-24 text-center border border-gray-300 rounded-full py-0.5 text-xs font-bold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-1.5 rounded-lg border border-gray-200">
+                    <span class="text-gray-700 font-bold">Light 2</span>
+                    <input type="text" value="Front Left" class="w-24 text-center border border-gray-300 rounded-full py-0.5 text-xs font-bold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-1.5 rounded-lg border border-gray-200">
+                    <span class="text-gray-700 font-bold">Light 5</span>
+                    <input type="text" value="Back Right" class="w-24 text-center border border-gray-300 rounded-full py-0.5 text-xs font-bold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-1.5 rounded-lg border border-gray-200">
+                    <span class="text-gray-700 font-bold">Light 3</span>
+                    <input type="text" value="Middle Right" class="w-24 text-center border border-gray-300 rounded-full py-0.5 text-xs font-bold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-1.5 rounded-lg border border-gray-200">
+                    <span class="text-gray-700 font-bold">Light 6</span>
+                    <input type="text" value="Back Left" class="w-24 text-center border border-gray-300 rounded-full py-0.5 text-xs font-bold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-1.5 rounded-lg border border-gray-200">
+                    <span class="text-gray-700 font-bold">Blind 1</span>
+                    <input type="text" value="Front Window" class="w-24 text-center border border-gray-300 rounded-full py-0.5 text-xs font-bold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-1.5 rounded-lg border border-gray-200">
+                    <span class="text-gray-700 font-bold">Blind 2</span>
+                    <input type="text" value="Rear Window" class="w-24 text-center border border-gray-300 rounded-full py-0.5 text-xs font-bold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-1.5 rounded-lg border border-gray-200">
+                    <span class="text-gray-700 font-bold">AC Unit 1</span>
+                    <input type="text" value="Unit A" class="w-24 text-center border border-gray-300 rounded-full py-0.5 text-xs font-bold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-1.5 rounded-lg border border-gray-200">
+                    <span class="text-gray-700 font-bold">AC Unit 2</span>
+                    <input type="text" value="Unit B" class="w-24 text-center border border-gray-300 rounded-full py-0.5 text-xs font-bold text-[#7D141D]">
+                  </div>
+                </div>
+              </section>
+
+              <!-- Automation Behavior Card -->
+              <section class="occupai-card metric-card-light space-y-2">
+                <div class="card-subtitle-maroon">AUTOMATION BEHAVIOR</div>
+                <div class="space-y-2 text-xs">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="font-bold text-gray-800">Auto-revert manual override</div>
+                      <div class="text-[10px] text-gray-500">Return to automatic control after set duration</div>
+                    </div>
+                    <label class="toggle-switch-ui"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="font-bold text-gray-800">Override timeout duration</div>
+                      <div class="text-[10px] text-gray-500">Applies when auto-revert is enabled</div>
+                    </div>
+                    <input type="text" value="30 min" class="w-20 text-center border border-gray-300 rounded-full py-0.5 text-xs font-bold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="font-bold text-gray-800">Confirm before override</div>
+                      <div class="text-[10px] text-gray-500">Show confirmation dialog for manual actions</div>
+                    </div>
+                    <label class="toggle-switch-ui"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Notifications Card -->
+              <section class="occupai-card metric-card-light space-y-2">
+                <div class="card-subtitle-maroon">NOTIFICATION</div>
+                <div class="space-y-2 text-xs">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="font-bold text-red-700">Node offline alert</div>
+                      <div class="text-[10px] text-gray-500">Notify when a hardware node disconnects</div>
+                    </div>
+                    <label class="toggle-switch-ui"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="font-bold text-gray-800">Override timeout duration</div>
+                      <div class="text-[10px] text-gray-500">Notify when a device fails to execute a command</div>
+                    </div>
+                    <label class="toggle-switch-ui"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="font-bold text-gray-800">Daily summary email</div>
+                      <div class="text-[10px] text-gray-500">Send end-of-day occupancy and energy summary</div>
+                    </div>
+                    <label class="toggle-switch-ui"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="flex items-center justify-between pt-1">
+                    <div>
+                      <div class="font-bold text-gray-800">Notification recipient</div>
+                      <div class="text-[10px] text-gray-500">Email or contact for alerts above</div>
+                    </div>
+                    <input type="text" value="jdelacruz@pup.edu.ph" class="w-48 text-center border border-gray-300 rounded-full py-0.5 text-xs font-mono font-bold text-[#7D141D]">
+                  </div>
+                </div>
+              </section>
+
+              <!-- Bottom Action Buttons -->
+              <div class="flex justify-end gap-2 pt-1">
+                <button class="px-4 py-1.5 rounded-full border border-[#7D141D] bg-[#7D141D] text-white text-xs font-extrabold shadow hover:bg-[#9B1C28]">Discard Changes</button>
+                <button class="px-4 py-1.5 rounded-full bg-gradient-to-r from-[#BF3700] to-[#7D141D] text-white text-xs font-extrabold shadow hover:opacity-90">Save Settings</button>
+              </div>
+
+            </div>
+
+            <!-- SUB-TAB 2: USER ACCOUNTS -->
+            <div id="set-panel-users" class="set-subpanel hidden space-y-3">
+
+              <!-- Authorized Users Card -->
+              <section class="occupai-card metric-card-light space-y-2">
+                <div class="flex items-center justify-between">
+                  <div class="card-subtitle-maroon">AUTHORIZED USERS — 4 ACCOUNTS</div>
+                  <button class="px-3 py-1 rounded-full bg-[#7D141D] text-white text-xs font-bold hover:bg-[#9B1C28]">+ Add</button>
+                </div>
+
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr class="border-b border-gray-300 text-[10px] font-bold text-[#7D141D]">
+                        <th class="py-1.5 px-1.5">Name</th>
+                        <th class="py-1.5 px-1.5">Email</th>
+                        <th class="py-1.5 px-1.5 text-center">Role</th>
+                        <th class="py-1.5 px-1.5 text-center">Status</th>
+                        <th class="py-1.5 px-1.5 text-center">Last Login</th>
+                        <th class="py-1.5 px-1.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="authorized-users-tbody" class="text-gray-700 font-medium"></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <!-- Add New User Card -->
+              <section class="occupai-card metric-card-light space-y-2">
+                <div class="card-subtitle-maroon">ADD NEW USER</div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-xs">
+                  <input type="text" placeholder="Full Name" class="py-1.5 px-3 rounded-full border border-gray-300 bg-white text-xs">
+                  <input type="email" placeholder="Email Address" class="py-1.5 px-3 rounded-full border border-gray-300 bg-white text-xs">
+                  <div class="relative">
+                    <select class="w-full py-1.5 px-3 rounded-full border border-gray-300 bg-white text-gray-700 font-semibold text-xs outline-none appearance-none">
+                      <option value="">Role ▼</option>
+                      <option>Administrator</option>
+                      <option>Faculty</option>
+                      <option>Student (view-only)</option>
+                    </select>
+                  </div>
+                  <button class="py-1.5 px-4 rounded-full bg-gradient-to-r from-[#BF3700] to-[#7D141D] text-white font-extrabold text-xs shadow hover:opacity-90">
+                    Send Invite
+                  </button>
+                </div>
+                <div class="text-[10px] text-gray-500 italic pt-0.5">
+                  Invite sends a LAN-restricted account setup link to the email above.
+                </div>
+              </section>
+
+              <!-- Role Permissions Reference Card -->
+              <section class="occupai-card metric-card-light space-y-2">
+                <div class="card-subtitle-maroon">ROLE PERMISSIONS REFERENCE</div>
+                <div class="space-y-1.5 text-xs">
+                  <div class="border-b border-gray-200 pb-1">
+                    <div class="font-bold text-[#7D141D]">Administrator</div>
+                    <div class="text-[10px] text-gray-600">Full access — controls, settings, user management</div>
+                  </div>
+                  <div class="border-b border-gray-200 pb-1">
+                    <div class="font-bold text-[#7D141D]">Faculty</div>
+                    <div class="text-[10px] text-gray-600">Dashboard, Utility Control, Hardware Status, Logs</div>
+                  </div>
+                  <div>
+                    <div class="font-bold text-[#7D141D]">Student (view-only)</div>
+                    <div class="text-[10px] text-gray-600">Dashboard and Logs — read-only, no override access</div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Bottom Action Buttons -->
+              <div class="flex justify-end gap-2 pt-1">
+                <button class="px-4 py-1.5 rounded-full border border-[#7D141D] bg-[#7D141D] text-white text-xs font-extrabold shadow hover:bg-[#9B1C28]">Discard Changes</button>
+                <button class="px-4 py-1.5 rounded-full bg-gradient-to-r from-[#BF3700] to-[#7D141D] text-white text-xs font-extrabold shadow hover:opacity-90">Save Settings</button>
+              </div>
+
+            </div>
+
+            <!-- SUB-TAB 3: SYSTEM INFO -->
+            <div id="set-panel-system" class="set-subpanel hidden space-y-3">
+
+              <!-- Row 1: Software & Deployment (2 Columns) -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- Software Card -->
+                <section class="occupai-card metric-card-light space-y-1.5">
+                  <div class="card-subtitle-maroon">SOFTWARE</div>
+                  <div class="space-y-1 text-xs font-medium">
+                    <div class="flex justify-between border-b border-gray-200 pb-1"><span class="text-gray-500">Dashboard Version</span><span class="font-mono font-bold text-gray-800" id="sys-sw-dash">v1.2.0</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1"><span class="text-gray-500">Python</span><span class="font-mono font-bold text-gray-800" id="sys-sw-py">3.11.6</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1"><span class="text-gray-500">Flask</span><span class="font-mono font-bold text-gray-800" id="sys-sw-flask">3.0.2</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1"><span class="text-gray-500">Ultralytics YOLO</span><span class="font-bold text-gray-800" id="sys-sw-yolo">YOLOv26 – v8.3.1</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">SQLite</span><span class="font-mono font-bold text-gray-800" id="sys-sw-sqlite">3.45.1</span></div>
+                  </div>
+                </section>
+
+                <!-- Deployment Card -->
+                <section class="occupai-card metric-card-light space-y-1.5">
+                  <div class="card-subtitle-maroon">DEPLOYMENT</div>
+                  <div class="space-y-1 text-xs font-medium">
+                    <div class="flex justify-between border-b border-gray-200 pb-1"><span class="text-gray-500">Room</span><span class="font-bold text-gray-800" id="sys-dep-room">Room 313, CEA Building</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1"><span class="text-gray-500">Primary Node</span><span class="font-bold text-gray-800" id="sys-dep-pnode">Raspberry Pi 4 Model B</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1"><span class="text-gray-500">Secondary Node</span><span class="font-bold text-gray-800" id="sys-dep-snode">ESP32-S3 N16R8</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1"><span class="text-gray-500">Network Mode</span><span class="font-bold text-gray-800" id="sys-dep-net">LAN-restricted, no internet</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">MQTT Broker Host</span><span class="font-bold text-gray-800" id="sys-dep-mqtt">Raspberry Pi (local)</span></div>
+                  </div>
+                </section>
+              </div>
+
+              <!-- Row 2: Storage & Health Snapshot (2 Columns) -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- Storage Card -->
+                <section class="occupai-card metric-card-light space-y-1.5">
+                  <div class="card-subtitle-maroon">STORAGE</div>
+                  <div class="space-y-1 text-xs font-medium">
+                    <div class="flex justify-between border-b border-gray-200 pb-1"><span class="text-gray-500">Database</span><span class="font-bold text-gray-800" id="sys-str-db">SQLite – local file</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1"><span class="text-gray-500">Database Size</span><span class="font-bold text-gray-800" id="sys-str-size">18.4 MB</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1"><span class="text-gray-500">Total Log Records</span><span class="font-bold text-gray-800" id="sys-str-records">4,812</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1"><span class="text-gray-500">Network Mode</span><span class="font-bold text-gray-800" id="sys-str-mode">Aug 1, 2026</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Auto-purge Policy</span><span class="font-bold text-gray-800" id="sys-str-purge">Logs older than 180 days</span></div>
+                  </div>
+                </section>
+
+                <!-- Health Snapshot Card -->
+                <section class="occupai-card metric-card-light space-y-1.5">
+                  <div class="card-subtitle-maroon">HEALTH SNAPSHOT</div>
+                  <div class="space-y-1 text-xs font-medium">
+                    <div class="flex justify-between border-b border-gray-200 pb-1"><span class="text-gray-500">System Uptime</span><span class="font-bold text-gray-800" id="sys-hlth-uptime">4h 12m</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1"><span class="text-gray-500">Nodes Online</span><span class="font-bold text-gray-800" id="sys-hlth-nodes">5 / 5</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1"><span class="text-gray-500">Last Full Restart</span><span class="font-bold text-gray-800" id="sys-hlth-restart">Today, 9:00 AM</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Last Data Backup</span><span class="font-bold text-gray-800" id="sys-hlth-backup">Yesterday, 11:00 PM</span></div>
+                  </div>
+                </section>
+              </div>
+
+              <!-- Row 3: Privacy & Compliance (Full Width) -->
+              <section class="occupai-card metric-card-light space-y-1.5">
+                <div class="card-subtitle-maroon">PRIVACY & COMPLIANCE</div>
+                <div class="space-y-1 text-xs">
+                  <div class="border-b border-gray-200 pb-1">
+                    <div class="font-bold text-gray-800">Visual Data Handling</div>
+                    <div class="text-[10px] text-gray-500">Volatile memory only — frames discarded after inference</div>
+                  </div>
+                  <div class="border-b border-gray-200 pb-1">
+                    <div class="font-bold text-gray-800">Compliance Standard</div>
+                    <div class="text-[10px] text-gray-500">RA 10173 – Data Privacy Act of 2012</div>
+                  </div>
+                  <div>
+                    <div class="font-bold text-gray-800">Stored Data Types</div>
+                    <div class="text-[10px] text-gray-500">Numerical occupancy counts, timestamps, system logs only</div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Bottom Action Buttons (3 Buttons) -->
+              <div class="flex justify-end gap-2 pt-1">
+                <button class="px-4 py-1.5 rounded-full border border-[#7D141D] bg-[#7D141D] text-white text-xs font-extrabold shadow hover:bg-[#9B1C28]">
+                  ↓ Download Diagnostic Report
+                </button>
+                <button class="px-4 py-1.5 rounded-full border border-[#7D141D] bg-[#7D141D] text-white text-xs font-extrabold shadow hover:bg-[#9B1C28]">
+                  ↓ Export Full Database
+                </button>
+                <button class="px-4 py-1.5 rounded-full bg-gradient-to-r from-[#BF3700] to-[#7D141D] text-white text-xs font-extrabold shadow hover:opacity-90">
+                  ↺ Restart All Nodes
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- FIXED CURVED BOTTOM NAVIGATION BAR (Visible on mobile screens <= 767px) -->
+  <nav class="bottom-nav-bar md:hidden">
+    <button onclick="switchSPATab('dashboard')" class="nav-btn active" id="mob-nav-btn-dashboard" title="Dashboard">
+      <div class="nav-active-pill" id="mob-nav-pill-dashboard">
+        <i class="fas fa-border-all text-[#7D141D] text-xl"></i>
+      </div>
+    </button>
+    <button onclick="switchSPATab('controls')" class="nav-btn" id="mob-nav-btn-controls" title="Controls">
+      <div id="mob-nav-pill-controls">
+        <i class="fas fa-sliders text-white text-xl"></i>
+      </div>
+    </button>
+    <button onclick="switchSPATab('hardware')" class="nav-btn" id="mob-nav-btn-hardware-wrap" title="Hardware Status">
+      <div id="mob-nav-pill-hardware">
+        <i class="fas fa-certificate text-white text-xl"></i>
+      </div>
+    </button>
+    <button onclick="switchSPATab('history')" class="nav-btn" id="mob-nav-btn-history" title="History">
+      <div id="mob-nav-pill-history">
+        <i class="fas fa-clock-rotate-left text-white text-xl"></i>
+      </div>
+    </button>
+    <button onclick="switchSPATab('settings')" class="nav-btn" id="mob-nav-btn-settings" title="Settings">
+      <div id="mob-nav-pill-settings">
+        <i class="fas fa-gear text-white text-lg"></i>
+      </div>
+    </button>
+  </nav>
+
+  <!-- JavaScript Controller -->
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+
+</html>
