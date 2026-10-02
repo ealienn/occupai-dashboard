@@ -962,7 +962,7 @@ async function handleInviteAccountSetup(e) {
 
   if (password !== confirmPassword) {
     if (errorMsg) {
-      errorMsg.textContent = '* Passwords must match';
+      errorMsg.textContent = '* Password did not match';
       errorMsg.classList.remove('hidden');
     }
     return;

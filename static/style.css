@@ -4,9 +4,13 @@
   --color-bg-dark: #3F060A;
   --color-sidebar-bg: #4A080C;
   --color-maroon-dark: #3B060B;
-  --color-maroon-primary: #7D141D;
-  --color-maroon-accent: #9B1C28;
-  --color-orange-hero: #B83B00;
+  --color-maroon-primary: #7A0C16;
+  --color-maroon-accent: #C4451C;
+  --color-orange-hero: #C4451C;
+  --color-invite-start: #6B141B;
+  --color-invite-end: #8A3E1B;
+  --color-subtitle-gray: #777777;
+  --color-error-red: #C0392B;
   --color-card-light: #EBEBEB;
   --color-text-dark: #1A1A1A;
   --font-main: 'Outfit', 'Poppins', -apple-system, sans-serif;
@@ -1068,7 +1072,7 @@ input:checked+.toggle-slider:before {
 .auth-banner-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(125, 20, 29, 0.88) 0%, rgba(60, 6, 10, 0.94) 100%);
+  background: linear-gradient(135deg, rgba(122, 12, 22, 0.90) 0%, rgba(196, 69, 28, 0.88) 100%);
 }
 
 .auth-banner-content {
@@ -1115,7 +1119,7 @@ input:checked+.toggle-slider:before {
   width: 50%;
   height: 100vh;
   padding: 48px;
-  background: #EBEBEB;
+  background: #ECE8E7;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1166,24 +1170,24 @@ input:checked+.toggle-slider:before {
 
 /* INVITATION NOTICE BANNER */
 .invite-notice-box {
-  background: linear-gradient(90deg, #7D141D 0%, #5A0E13 100%);
-  border-radius: 10px;
-  padding: 10px 14px;
+  background: linear-gradient(135deg, var(--color-invite-start) 0%, var(--color-invite-end) 100%);
+  border-radius: 14px;
+  padding: 12px 16px;
   color: #FFFFFF;
-  margin-bottom: 14px;
-  box-shadow: 0 4px 10px rgba(125, 20, 29, 0.25);
+  margin-bottom: 16px;
+  box-shadow: 0 4px 14px rgba(107, 20, 27, 0.3);
 }
 
 .invite-notice-title {
-  font-weight: 700;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.3px;
   margin-bottom: 2px;
 }
 
 .invite-notice-sub {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
+  color: #FFE8D6;
   opacity: 0.95;
   line-height: 1.35;
 }
@@ -1191,23 +1195,23 @@ input:checked+.toggle-slider:before {
 .auth-title {
   font-size: 1.75rem;
   font-weight: 800;
-  color: #1F2937;
+  color: var(--color-maroon-primary);
   text-align: center;
   margin-bottom: 2px;
 }
 
 .auth-subtitle {
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   font-weight: 500;
-  color: #6B7280;
+  color: var(--color-subtitle-gray);
   text-align: center;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .form-group {
@@ -1217,10 +1221,10 @@ input:checked+.toggle-slider:before {
 
 .auth-input {
   width: 100%;
-  height: 46px;
+  height: 48px;
   padding: 0 18px;
   border: 1.5px solid #DED8D6;
-  border-radius: 14px;
+  border-radius: 12px;
   background: #FFFFFF;
   font-size: 0.95rem;
   font-weight: 600;
@@ -1235,26 +1239,26 @@ input:checked+.toggle-slider:before {
 }
 
 .auth-input:focus {
-  border-color: #7C1A0E;
+  border-color: var(--color-maroon-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(124, 26, 14, 0.15);
+  box-shadow: 0 0 0 3px rgba(122, 12, 22, 0.15);
 }
 
 .input-with-eye .auth-input {
-  padding-right: 40px;
+  padding-right: 44px;
 }
 
 .eye-toggle-btn {
   position: absolute;
-  right: 10px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   background: transparent;
   border: none;
-  color: #6B7280;
+  color: #8C6B68;
   cursor: pointer;
   padding: 6px;
-  font-size: 0.95rem;
+  font-size: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1262,7 +1266,7 @@ input:checked+.toggle-slider:before {
 }
 
 .eye-toggle-btn:hover {
-  color: #111827;
+  color: var(--color-maroon-primary);
 }
 
 .form-row-between {
@@ -1282,14 +1286,14 @@ input:checked+.toggle-slider:before {
 }
 
 .remember-me-label input[type="checkbox"] {
-  accent-color: #7D141D;
+  accent-color: var(--color-maroon-primary);
   width: 14px;
   height: 14px;
   cursor: pointer;
 }
 
 .forgot-link {
-  color: #7D141D;
+  color: var(--color-maroon-primary);
   font-weight: 600;
   text-decoration: none;
 }
@@ -1301,23 +1305,23 @@ input:checked+.toggle-slider:before {
 /* BUTTONS */
 .auth-btn-primary {
   width: 100%;
-  height: 42px;
-  background: linear-gradient(180deg, #88161B 0%, #5A0E13 100%);
+  height: 48px;
+  background: var(--color-maroon-primary);
   color: #FFFFFF;
-  font-weight: 700;
-  font-size: 0.92rem;
+  font-weight: 800;
+  font-size: 0.95rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(136, 22, 27, 0.35);
-  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(122, 12, 22, 0.3);
+  transition: all 0.2s ease-in-out;
   margin-top: 4px;
 }
 
 .auth-btn-primary:hover {
-  background: linear-gradient(180deg, #9B1C28 0%, #6E1117 100%);
-  box-shadow: 0 6px 16px rgba(136, 22, 27, 0.5);
-  transform: translateY(-1px);
+  background: #961C27;
+  box-shadow: 0 6px 18px rgba(122, 12, 22, 0.45);
+  transform: translateY(-2px);
 }
 
 .auth-btn-primary:active {
@@ -1326,19 +1330,20 @@ input:checked+.toggle-slider:before {
 
 .auth-btn-secondary {
   width: 100%;
-  height: 38px;
-  background: linear-gradient(180deg, #9B1C28 0%, #7D141D 100%);
+  height: 42px;
+  background: var(--color-maroon-primary);
   color: #FFFFFF;
-  font-weight: 600;
-  font-size: 0.85rem;
+  font-weight: 700;
+  font-size: 0.88rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .auth-btn-secondary:hover {
-  background: linear-gradient(180deg, #B82432 0%, #8C1620 100%);
+  background: #961C27;
+  transform: translateY(-1px);
 }
 
 .resend-subtext {
@@ -1349,7 +1354,7 @@ input:checked+.toggle-slider:before {
 }
 
 .resend-subtext a {
-  color: #7D141D;
+  color: var(--color-maroon-primary);
   font-weight: 600;
 }
 
@@ -1361,7 +1366,7 @@ input:checked+.toggle-slider:before {
 }
 
 .auth-section-divider span {
-  background: #EBEBEB;
+  background: #ECE8E7;
   padding: 0 10px;
   position: relative;
   top: -10px;
@@ -1371,7 +1376,7 @@ input:checked+.toggle-slider:before {
 }
 
 .auth-hint-error {
-  color: #DC2626;
+  color: var(--color-error-red);
   font-size: 0.78rem;
   font-weight: 600;
   font-style: italic;
@@ -1380,12 +1385,12 @@ input:checked+.toggle-slider:before {
 }
 
 .auth-footer-links {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: #4B5563;
 }
 
 .auth-footer-links a {
-  color: #7D141D;
+  color: var(--color-maroon-primary);
   font-weight: 700;
   text-decoration: none;
 }
