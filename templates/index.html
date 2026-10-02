@@ -1654,9 +1654,9 @@
         <div class="absolute -top-12 -right-12 w-64 h-64 rounded-full pointer-events-none z-1"
              style="background: radial-gradient(circle, rgba(255, 180, 100, 0.45) 0%, transparent 70%); filter: blur(35px);"></div>
         <div class="auth-banner-overlay"></div>
-        <div class="auth-banner-content flex flex-col items-start justify-start text-left p-8 sm:p-12 z-10 w-full">
-          <div class="auth-logo-wrap flex items-center gap-3 mb-2">
-            <svg class="w-10 h-7 sm:w-14 sm:h-10 text-white flex-shrink-0" viewBox="0 0 48 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div class="auth-banner-content flex flex-col items-start justify-start text-left p-12 sm:p-16 z-10 w-full">
+          <div class="auth-logo-wrap flex items-center gap-4 mb-3">
+            <svg class="w-16 h-11 sm:w-20 sm:h-14 text-white flex-shrink-0" viewBox="0 0 48 30" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect x="19" y="8" width="10" height="14" rx="5" fill="#E53935" />
               <rect x="22" y="14" width="4" height="2" rx="1" fill="white" />
               <path d="M15 9C13.5 10.8 13.5 19.2 15 21" stroke="white" stroke-width="2.5" stroke-linecap="round" />
@@ -1666,9 +1666,9 @@
               <path d="M38 6C40.5 9 40.5 21 38 24" stroke="white" stroke-width="2.5" stroke-linecap="round" />
               <path d="M43 3C46.5 7 46.5 23 43 27" stroke="white" stroke-width="2.5" stroke-linecap="round" />
             </svg>
-            <span class="text-white font-black text-3xl sm:text-4xl tracking-tight">Occup<span class="text-white">AI</span></span>
+            <span class="text-white font-black text-4xl sm:text-[3.25rem] tracking-tight leading-none">Occup<span class="text-white">AI</span></span>
           </div>
-          <p class="text-white font-medium text-sm sm:text-base tracking-wide">Smart Occupancy & Utility Automation</p>
+          <p class="text-white/90 font-medium text-lg sm:text-xl tracking-wide">Smart Occupancy & Utility Automation</p>
         </div>
       </div>
 
@@ -1680,48 +1680,48 @@
 
         <!-- SCREEN 1: SET UP ACCOUNT (INVITATION VIEW) -->
         <div id="auth-screen-setup" class="auth-screen hidden">
-          <div class="invite-notice-box text-center p-3.5 sm:p-4 rounded-[14px] text-white mb-5">
-            <div class="invite-notice-title text-[15px] font-bold text-white tracking-wide">You've been invited to OccupAI!</div>
-            <div class="invite-notice-sub text-[12px] font-medium text-[#FFE8D6]/90 mt-1 leading-snug" id="invite-notice-text">
+          <div class="invite-notice-box text-center py-4 px-6 rounded-[14px] text-white mb-6">
+            <div class="invite-notice-title text-[18px] font-bold text-white tracking-wide">You've been invited to OccupAI!</div>
+            <div class="invite-notice-sub text-[15px] font-medium text-[#FFE8D6]/90 mt-1 leading-snug" id="invite-notice-text">
               Invited by <strong id="invite-by-name">J. Cruz</strong> (<span id="invite-by-role">Administrator</span>) | Role assigned: <strong id="invite-assigned-role">Faculty</strong>
             </div>
           </div>
 
-          <h2 class="auth-title text-[28px] font-black text-[#6E0B14] text-center">Set Up Account</h2>
-          <p class="auth-subtitle text-[14px] font-medium text-[#7A6B6D] text-center mt-1 mb-5">Complete the fields below to activate access</p>
+          <h2 class="auth-title text-[36px] font-black text-[#6E0B14] text-center">Set Up Account</h2>
+          <p class="auth-subtitle text-[17px] font-medium text-[#666666] text-center mt-1 mb-6">Complete the fields below to activate access</p>
 
-          <form onsubmit="handleInviteAccountSetup(event)" class="auth-form flex flex-col gap-3.5">
+          <form onsubmit="handleInviteAccountSetup(event)" class="auth-form flex flex-col gap-4">
             <div class="form-group">
-              <input type="text" id="setup-fullname" class="auth-input" placeholder="Name" required>
+              <input type="text" id="setup-fullname" class="auth-input h-[56px] text-[17px] rounded-xl" placeholder="Name" required>
             </div>
 
             <div class="form-group">
-              <input type="email" id="setup-email" class="auth-input bg-gray-50/80 cursor-not-allowed text-gray-600"
+              <input type="email" id="setup-email" class="auth-input h-[56px] text-[17px] rounded-xl bg-gray-50/80 cursor-not-allowed text-gray-600"
                 placeholder="Email (from invite)" value="j.doe@pup.edu.ph" readonly required>
             </div>
 
             <div class="form-group input-with-eye">
-              <input type="password" id="setup-password" class="auth-input" placeholder="Enter Password" required>
+              <input type="password" id="setup-password" class="auth-input h-[56px] text-[17px] rounded-xl" placeholder="Enter Password" required>
               <button type="button" class="eye-toggle-btn"
                 onclick="togglePasswordVisibility('setup-password', 'eye-icon-setup-1')" tabIndex="-1">
-                <i class="far fa-eye" id="eye-icon-setup-1"></i>
+                <i class="far fa-eye text-[22px]" id="eye-icon-setup-1"></i>
               </button>
             </div>
 
             <div class="form-group input-with-eye">
-              <input type="password" id="setup-confirm-password" class="auth-input" placeholder="Confirm Password"
+              <input type="password" id="setup-confirm-password" class="auth-input h-[56px] text-[17px] rounded-xl" placeholder="Confirm Password"
                 required>
               <button type="button" class="eye-toggle-btn"
                 onclick="togglePasswordVisibility('setup-confirm-password', 'eye-icon-setup-2')" tabIndex="-1">
-                <i class="far fa-eye" id="eye-icon-setup-2"></i>
+                <i class="far fa-eye text-[22px]" id="eye-icon-setup-2"></i>
               </button>
             </div>
 
-            <button type="submit" class="auth-btn-primary w-full h-[44px] rounded-[30px] bg-[#6B1019] hover:bg-[#851520] text-white font-bold text-[15px] shadow-md transition-all cursor-pointer">Sign Up</button>
-            <div class="auth-hint-error italic text-[12px] font-semibold text-[#8A1B22] text-center mt-1 hidden" id="setup-error-msg">* Password did not match</div>
+            <button type="submit" class="auth-btn-primary w-full h-[54px] rounded-[30px] bg-[#6B1019] hover:bg-[#851520] text-white font-bold text-[18px] shadow-md transition-all cursor-pointer">Sign Up</button>
+            <div class="auth-hint-error italic text-[14px] font-semibold text-[#8A1B22] text-center mt-2 hidden" id="setup-error-msg">* Password did not match</div>
           </form>
 
-          <div class="auth-footer-links mt-5 text-center text-xs sm:text-sm font-medium text-gray-600">
+          <div class="auth-footer-links mt-6 text-center text-[16px] font-medium text-gray-600">
             Already have an account? <a href="#" onclick="switchAuthScreen('login')" class="text-[#6B1019] font-bold underline">Log In</a>
           </div>
         </div>
