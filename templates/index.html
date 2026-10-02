@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OccupAI Dashboard</title>
+  <meta name="description" content="OccupAI IoT Room Occupancy & Environmental Telemetry Dashboard">
+
+  <!-- Google Fonts (Poppins & Outfit) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+
+  <!-- FontAwesome 6 Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom CSS with Cache Buster -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1013">
+</head>
+
+<body>
+
+  <div class="dashboard-viewport" id="app">
+
+    <!-- MOBILE TOP CURVED HEADER BANNER (Visible on mobile screens <= 767px) -->
+    <header class="mobile-header-banner md:hidden">
+      <button class="avatar-btn" onclick="openAuthModal('login')" title="User Profile">
+        <i class="fas fa-user text-[#7D141D]"></i>
+      </button>
+
+      <div class="flex items-center gap-2">
+        <div class="logo-icon-wrap">
+          <i class="fas fa-wifi text-white text-xs"></i>
+        </div>
+        <span class="text-xl font-extrabold tracking-wide text-white">Occup<span class="text-amber-200">AI</span></span>
+      </div>
+
+      <button onclick="manualRefresh()" class="refresh-btn" title="Refresh Telemetry">
+        <i class="fas fa-rotate-right text-lg text-white" id="mobile-refresh-icon"></i>
+      </button>
+    </header>
+
+    <!-- LEFT SIDEBAR (Visible on desktop screens >= 768px) -->
+    <aside class="sidebar-container hidden md:flex">
+      <!-- Logo Box -->
+      <div class="logo-box">
+        <div class="logo-graphic flex items-center justify-center">
+          <svg width="48" height="30" viewBox="0 0 48 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="19" y="8" width="10" height="14" rx="5" fill="#E53935" />
+            <rect x="22" y="14" width="4" height="2" rx="1" fill="white" />
+            <path d="M15 9C13.5 10.8 13.5 19.2 15 21" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M10 6C7.5 9 7.5 21 10 24" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M5 3C1.5 7 1.5 23 5 27" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M33 9C34.5 10.8 34.5 19.2 33 21" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M38 6C40.5 9 40.5 21 38 24" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M43 3C46.5 7 46.5 23 43 27" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+          </svg>
+        </div>
+        <span class="logo-title">Occup<span class="logo-title-accent">AI</span></span>
+      </div>
+
+      <!-- Navigation Section -->
+      <div class="nav-section">
+        <div class="nav-header">NAVIGATION</div>
+        <nav class="nav-menu">
+          <button onclick="switchSPATab('landing')" class="nav-item active" id="nav-btn-landing">
+            <i class="fas fa-house-user text-base"></i>
+            <span>Public Landing</span>
+          </button>
+
+          <button onclick="switchSPATab('dashboard')" class="nav-item" id="nav-btn-dashboard">
+            <i class="fas fa-border-all text-base"></i>
+            <span>Dashboard</span>
+          </button>
+
+          <button onclick="switchSPATab('controls')" class="nav-item" id="nav-btn-controls">
+            <i class="fas fa-sliders text-base"></i>
+            <span>Utility Control</span>
+          </button>
+
+          <button onclick="switchSPATab('hardware')" class="nav-item" id="nav-btn-hardware">
+            <i class="fas fa-certificate text-base"></i>
+            <span>Hardware Status</span>
+          </button>
+
+          <button onclick="switchSPATab('history')" class="nav-item" id="nav-btn-history">
+            <i class="fas fa-clock-rotate-left text-base"></i>
+            <span>Logs/History</span>
+          </button>
+
+          <button onclick="switchSPATab('settings')" class="nav-item" id="nav-btn-settings">
+            <i class="fas fa-gear text-base"></i>
+            <span>Settings</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Sidebar User Profile Footer -->
+      <div class="user-account-section">
+        <div class="user-account-header">USER ACCOUNT</div>
+        <div class="user-profile-card">
+          <div class="user-avatar" id="sidebar-user-avatar">
+            <span id="sidebar-user-initials">JC</span>
+          </div>
+          <div class="user-info">
+            <div class="user-name" id="sidebar-user-name">J. Cruz</div>
+            <div class="user-role" id="sidebar-user-role">Administrator</div>
+          </div>
+          <button class="user-menu-btn" onclick="toggleUserDropdown(event)" title="User Options">
+            <i class="fas fa-ellipsis-vertical"></i>
+          </button>
+          <div id="user-dropdown-menu" class="user-dropdown-menu hidden">
+            <button onclick="openAuthModal('login')" class="user-dropdown-item"><i
+                class="fas fa-right-to-bracket mr-2"></i> Log In / Switch Account</button>
+            <button onclick="openAuthModal('setup')" class="user-dropdown-item"><i class="fas fa-user-plus mr-2"></i>
+              Set Up Account (Invite)</button>
+            <button onclick="openAuthModal('forgot-step1')" class="user-dropdown-item"><i class="fas fa-key mr-2"></i>
+              Forgot Password</button>
+            <button onclick="handleLogout()" class="user-dropdown-item text-red-600"><i
+                class="fas fa-right-from-bracket mr-2"></i> Log Out</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="main-panel">
+
+      <!-- VIEW 0: PUBLIC LANDING PAGE VIEW -->
+      <div id="view-landing" class="spa-view w-full min-h-screen flex flex-col items-center justify-center p-3 sm:p-6 lg:p-8 relative overflow-y-auto">
+
+        <!-- WRAPPER FOR HEADER + WHITE CARD -->
+        <div class="w-full max-w-[1380px] mx-auto flex flex-col gap-4 sm:gap-6 my-auto">
+
+          <!-- TOP HEADER BAR (DESKTOP: FLEX BETWEEN, MOBILE: CENTERED STACK) -->
+          <header class="w-full px-2">
+            
+            <!-- DESKTOP HEADER (md:flex hidden) -->
+            <div class="hidden md:flex items-center justify-between gap-4">
+              <!-- Left: Logo + Room 313 + View Only -->
+              <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 rounded-2xl bg-[#d32f2f] border-2 border-[#60a5fa] shadow-md flex items-center justify-center p-2">
+                    <svg width="34" height="22" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="13" y="4" width="8" height="8" rx="4" fill="#E53935" />
+                      <rect x="15" y="7" width="4" height="2" rx="1" fill="white" />
+                      <path d="M10 4C9 5.5 9 10.5 10 12" stroke="white" stroke-width="2.2" stroke-linecap="round" />
+                      <path d="M6 2C4.5 4.5 4.5 11.5 6 14" stroke="white" stroke-width="2.2" stroke-linecap="round" />
+                      <path d="M2 0.5C0 3.5 0 12.5 2 15.5" stroke="white" stroke-width="2.2" stroke-linecap="round" />
+                      <path d="M24 4C25 5.5 25 10.5 24 12" stroke="white" stroke-width="2.2" stroke-linecap="round" />
+                      <path d="M28 2C29.5 4.5 29.5 11.5 28 14" stroke="white" stroke-width="2.2" stroke-linecap="round" />
+                      <path d="M32 0.5C34 3.5 34 12.5 32 15.5" stroke="white" stroke-width="2.2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <span class="text-white font-black text-3xl sm:text-4xl tracking-tight leading-none">Occup<span class="text-white">AI</span></span>
+                </div>
+
+                <span class="px-4 py-2 rounded-xl border-2 border-white text-white font-black text-base tracking-wide bg-white/5 backdrop-blur-xs">Room 313</span>
+                <span class="px-4 py-2 rounded-xl border-2 border-dashed border-white text-white font-black text-base tracking-wide bg-white/5 backdrop-blur-xs">View Only</span>
+              </div>
+
+              <!-- Right: Live indicator + Log In Button -->
+              <div class="flex items-center gap-6">
+                <div class="flex items-center gap-2.5 text-amber-100/95 font-black text-sm sm:text-base">
+                  <span class="inline-block w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>Live · updates every 10s</span>
+                </div>
+
+                <button onclick="openAuthModal('login')" class="px-7 py-2.5 rounded-full bg-[#4a080c] hover:bg-[#5e0a0f] border border-white/25 text-white font-black text-base sm:text-lg shadow-lg transition-all transform hover:scale-105 active:scale-95 cursor-pointer">
+                  Log In
+                </button>
+              </div>
+            </div>
+
+            <!-- MOBILE HEADER (md:hidden flex centered column) -->
+            <div class="flex md:hidden flex-col items-center justify-center gap-2 text-center text-white my-2">
+              <!-- Big Centered Logo Graphic & Title -->
+              <div class="flex flex-col items-center gap-1">
+                <svg width="72" height="42" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="13" y="4" width="8" height="8" rx="4" fill="#E53935" />
+                  <rect x="15" y="7" width="4" height="2" rx="1" fill="white" />
+                  <path d="M10 4C9 5.5 9 10.5 10 12" stroke="white" stroke-width="2" stroke-linecap="round" />
+                  <path d="M6 2C4.5 4.5 4.5 11.5 6 14" stroke="white" stroke-width="2" stroke-linecap="round" />
+                  <path d="M2 0.5C0 3.5 0 12.5 2 15.5" stroke="white" stroke-width="2" stroke-linecap="round" />
+                  <path d="M24 4C25 5.5 25 10.5 24 12" stroke="white" stroke-width="2" stroke-linecap="round" />
+                  <path d="M28 2C29.5 4.5 29.5 11.5 28 14" stroke="white" stroke-width="2" stroke-linecap="round" />
+                  <path d="M32 0.5C34 3.5 34 12.5 32 15.5" stroke="white" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                <span class="text-white font-black text-4xl tracking-tight leading-none mt-0.5">Occup<span class="text-white">AI</span></span>
+              </div>
+
+              <!-- Centered Badges Row -->
+              <div class="flex items-center justify-center gap-3 mt-1">
+                <span class="px-3.5 py-1 rounded-xl border border-white text-white font-bold text-xs tracking-wide bg-white/10">Room 313</span>
+                <span class="px-3.5 py-1 rounded-xl border border-dashed border-white text-white font-bold text-xs tracking-wide bg-white/5">View Only</span>
+              </div>
+
+              <div class="text-[11px] font-extrabold text-amber-100/90 flex items-center gap-1.5 mt-0.5">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Live - updates every 10s</span>
+              </div>
+            </div>
+
+          </header>
+
+          <!-- MAIN WHITE CARD CONTAINER -->
+          <div class="w-full bg-white rounded-[32px] sm:rounded-[40px] lg:rounded-[48px] p-4 sm:p-8 lg:p-14 shadow-2xl relative border border-white/40">
+            
+            <!-- Title & Subtitle -->
+            <div class="mb-4 sm:mb-7 lg:mb-9">
+              <h1 class="text-xl sm:text-3xl lg:text-5xl font-black text-[#5C0A0E] tracking-tight">
+                Room 313 — Current Status
+              </h1>
+              <p class="text-xs sm:text-base lg:text-lg font-black text-[#8C3A3A] mt-1 sm:mt-2 leading-snug">
+                Read-only view for students and faculty. Contact Administrator staff for manual adjustments.
+              </p>
+            </div>
+
+            <!-- MIDDLE SECTION: OCCUPANCY CARD + TEMP & LUX CARDS (2 COLUMNS ON MOBILE) -->
+            <div class="grid grid-cols-12 gap-3 sm:gap-6 lg:gap-8 mb-3 sm:mb-6 lg:mb-8">
+
+              <!-- LEFT: OCCUPANCY DATA CARD (col-span-6 on mobile, col-span-6 on lg) -->
+              <div class="col-span-6 rounded-2xl sm:rounded-[28px] p-3.5 sm:p-7 text-white relative overflow-hidden flex flex-col justify-between min-h-[220px] sm:min-h-[290px] shadow-md" style="background: linear-gradient(135deg, #7c1a0e 0%, #b84918 55%, #d8681e 100%);">
+                
+                <div class="relative z-10">
+                  <span class="text-[9px] sm:text-xs lg:text-sm font-black tracking-widest text-white/80 uppercase">OCCUPANCY DATA</span>
+                  
+                  <div class="mt-2 sm:mt-5 flex flex-col sm:flex-row items-start sm:items-baseline gap-0.5 sm:gap-3">
+                    <span id="landing-occupancy-count" class="text-3xl sm:text-6xl lg:text-8xl font-black text-white tracking-tight">24</span>
+                    <span class="text-lg sm:text-4xl lg:text-6xl font-black text-white">people</span>
+                  </div>
+                  
+                  <p class="text-[10px] sm:text-base lg:text-lg font-bold text-amber-100/90 mt-0.5 sm:mt-2 leading-tight">
+                    are currently in Room 313
+                  </p>
+                </div>
+
+                <div class="relative z-10 mt-4 sm:mt-10">
+                  <span id="landing-tier-badge" class="inline-block px-2.5 sm:px-5 py-1 sm:py-2 rounded-full border border-white/40 bg-black/25 text-[9px] sm:text-xs lg:text-sm font-black tracking-wider text-white shadow-xs uppercase">
+                    TIER: MEDIUM (16-35)
+                  </span>
+                </div>
+
+                <!-- Silhouette 3 People Graphic Overlay -->
+                <div class="absolute right-0 bottom-0 pointer-events-none select-none z-0">
+                  <svg class="w-36 sm:w-64 h-20 sm:h-36" viewBox="0 0 270 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="85" cy="60" r="28" fill="#e2b28c" />
+                    <path d="M30 150 C30 100, 140 100, 140 150 Z" fill="#e2b28c" />
+                    
+                    <circle cx="195" cy="60" r="28" fill="#e2b28c" />
+                    <path d="M140 150 C140 100, 250 100, 250 150 Z" fill="#e2b28c" />
+                    
+                    <circle cx="140" cy="42" r="32" fill="#e8b993" />
+                    <path d="M75 150 C75 90, 205 90, 205 150 Z" fill="#e8b993" />
+                  </svg>
+                </div>
+              </div>
+
+              <!-- RIGHT: STACKED METRICS (col-span-6 on mobile, col-span-6 on lg) -->
+              <div class="col-span-6 flex flex-col gap-2.5 sm:gap-5 justify-between">
+                
+                <!-- CARD 1: ROOM TEMPERATURE -->
+                <div class="bg-[#ece8e7] border border-[#ded8d6] sm:border-[1.5px] rounded-2xl sm:rounded-[24px] p-3 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-xs min-h-[105px] sm:min-h-[135px]">
+                  <div>
+                    <span class="text-[8px] sm:text-xs lg:text-sm font-black tracking-widest text-[#8c6b68] uppercase">ROOM TEMPERATURE</span>
+                    <div id="landing-val-temp" class="text-xl sm:text-4xl lg:text-6xl font-black text-[#591c1e] mt-0.5 sm:mt-1.5 tracking-tight">24.5°C</div>
+                    <div id="landing-val-temp-status" class="text-[9px] sm:text-xs lg:text-sm font-black text-[#8c6b68] mt-0.5 sm:mt-1.5">Cooling active</div>
+                  </div>
+                  
+                  <div class="text-[#a86163] hidden sm:block p-1">
+                    <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M10 28L30 12L50 28V50C50 51.5 48.5 53 47 53H13C11.5 53 10 51.5 10 50V28Z" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M40 18V12H45V22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                      <rect x="27" y="24" width="6" height="18" rx="3" stroke="currentColor" stroke-width="2.5"/>
+                      <circle cx="30" cy="42" r="5" fill="currentColor"/>
+                      <path d="M30 30V40" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- CARD 2: OUTDOOR BRIGHTNESS -->
+                <div class="bg-[#ece8e7] border border-[#ded8d6] sm:border-[1.5px] rounded-2xl sm:rounded-[24px] p-3 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-xs min-h-[105px] sm:min-h-[135px]">
+                  <div>
+                    <span class="text-[8px] sm:text-xs lg:text-sm font-black tracking-widest text-[#8c6b68] uppercase">OUTDOOR BRIGHTNESS</span>
+                    <div id="landing-val-lux" class="text-xl sm:text-4xl lg:text-6xl font-black text-[#591c1e] mt-0.5 sm:mt-1.5 tracking-tight">1200 lx</div>
+                    <div id="landing-val-lux-status" class="text-[9px] sm:text-xs lg:text-sm font-black text-[#8c6b68] mt-0.5 sm:mt-1.5 leading-tight">Bright — blinds partially closed</div>
+                  </div>
+                  
+                  <div class="text-[#a86163] hidden sm:block p-1">
+                    <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M10 44H50" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+                      <path d="M16 44C16 33 22.5 25 30 25C37.5 25 44 33 44 44H16Z" fill="currentColor" fill-opacity="0.5" stroke="currentColor" stroke-width="3.5"/>
+                      <path d="M30 12V18" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+                      <path d="M15 20L19 24" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+                      <path d="M45 20L41 24" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+                      <path d="M8 34H12" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+                      <path d="M52 34H48" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            <!-- BOTTOM ROW: 4 SUMMARY CARDS (2 COLUMNS ON MOBILE) -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-5 lg:gap-6">
+              
+              <!-- CARD 1: AIR CONDITIONING -->
+              <div class="bg-[#ece8e7] border border-[#ded8d6] sm:border-[1.5px] rounded-xl sm:rounded-[22px] p-3 sm:p-5 flex flex-col justify-between gap-2 sm:gap-4 shadow-xs">
+                <span class="text-[8px] sm:text-xs lg:text-sm font-black tracking-wider text-[#8c6b68] uppercase">AIR CONDITIONING</span>
+                <div class="flex items-center justify-between">
+                  <span class="text-xs sm:text-base lg:text-lg font-black text-[#591c1e]">Status</span>
+                  <span id="landing-ac-pill" class="landing-pill text-xs sm:text-base px-2.5 sm:px-5 py-1 min-w-[42px] sm:min-w-[70px]">OFF</span>
+                </div>
+              </div>
+
+              <!-- CARD 2: PIN LIGHTS -->
+              <div class="bg-[#ece8e7] border border-[#ded8d6] sm:border-[1.5px] rounded-xl sm:rounded-[22px] p-3 sm:p-5 flex flex-col justify-between gap-2 sm:gap-4 shadow-xs">
+                <span class="text-[8px] sm:text-xs lg:text-sm font-black tracking-wider text-[#8c6b68] uppercase">PIN LIGHTS</span>
+                <div class="flex items-center justify-between">
+                  <span class="text-xs sm:text-base lg:text-lg font-black text-[#591c1e]">Avg. brightness</span>
+                  <span id="landing-lights-pill" class="landing-pill text-xs sm:text-base px-2.5 sm:px-5 py-1 min-w-[42px] sm:min-w-[70px]">53%</span>
+                </div>
+              </div>
+
+              <!-- CARD 3: BLINDS -->
+              <div class="bg-[#ece8e7] border border-[#ded8d6] sm:border-[1.5px] rounded-xl sm:rounded-[22px] p-3 sm:p-5 flex flex-col justify-between gap-2 sm:gap-4 shadow-xs">
+                <span class="text-[8px] sm:text-xs lg:text-sm font-black tracking-wider text-[#8c6b68] uppercase">BLINDS</span>
+                <div class="flex items-center justify-between">
+                  <span class="text-xs sm:text-base lg:text-lg font-black text-[#591c1e]">Avg. Position</span>
+                  <span id="landing-blinds-pill" class="landing-pill text-xs sm:text-base px-2.5 sm:px-5 py-1 min-w-[42px] sm:min-w-[70px]">OPEN</span>
+                </div>
+              </div>
+
+              <!-- CARD 4: SYSTEM STATUS -->
+              <div class="bg-[#ece8e7] border border-[#ded8d6] sm:border-[1.5px] rounded-xl sm:rounded-[22px] p-3 sm:p-5 flex flex-col justify-between gap-2 sm:gap-4 shadow-xs">
+                <span class="text-[8px] sm:text-xs lg:text-sm font-black tracking-wider text-[#8c6b68] uppercase">SYSTEM STATUS</span>
+                <div class="flex items-center justify-between">
+                  <span class="text-xs sm:text-base lg:text-lg font-black text-[#591c1e]">All Systems</span>
+                  <span id="landing-sys-pill" class="landing-pill text-xs sm:text-base px-2.5 sm:px-5 py-1 min-w-[42px] sm:min-w-[70px]">NORMAL</span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- FOOTER MESSAGE -->
+            <div class="mt-4 sm:mt-8 text-center">
+              <p class="text-[10px] sm:text-sm lg:text-base font-black text-[#8C3A3A] leading-snug">
+                This page does not allow manual control. For overrides or reported issues, please contact the Administrator.
+              </p>
+            </div>
+
+            <!-- MOBILE LOG IN BUTTON AT BOTTOM OF WHITE CARD (VISIBLE ON MOBILE ONLY) -->
+            <button onclick="openAuthModal('login')" class="w-full mt-4 py-3 rounded-2xl bg-[#7D141D] hover:bg-[#961b26] text-white font-black text-base shadow-md md:hidden cursor-pointer transition-all active:scale-98">
+              Log In
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- VIEW 1: DASHBOARD VIEW -->
+      <div id="view-dashboard" class="spa-view min-h-full flex flex-col justify-between gap-3">
+
+        <!-- Mobile User Greeting (Mobile View) -->
+        <div class="md:hidden px-1 mt-0.5">
+          <h1 class="text-lg font-extrabold text-[#7D141D] tracking-tight">
+            Hello, Juan Dela Cruz!
+          </h1>
+        </div>
+
+        <!-- Desktop Header Bar -->
+        <header class="main-header hidden md:flex">
+          <h1 class="header-title">Dashboard</h1>
+          <div class="header-actions">
+            <button class="icon-circle-btn" title="Notifications">
+              <i class="fas fa-bell text-[#7D141D] text-sm"></i>
+            </button>
+            <button onclick="manualRefresh()" class="refresh-pill-btn" id="refresh-btn">
+              <span>Refresh</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- ROW 1: TOP 3 METRIC CARDS -->
+        <section class="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3 flex-shrink-0">
+
+          <!-- Card 1: OCCUPANCY DATA (Spans 2 columns on mobile, 1 column on desktop) -->
+          <div
+            class="occupai-card hero-orange-card flex flex-col justify-between col-span-2 md:col-span-1 relative overflow-hidden min-h-[140px] sm:min-h-[150px]">
+            <div class="relative z-10 space-y-1">
+              <div class="card-subtitle-white">OCCUPANCY DATA</div>
+              <div class="text-3xl lg:text-4xl font-black text-white tracking-tight flex items-baseline gap-2">
+                <span id="occupancy-count">##</span>
+                <span class="text-2xl font-bold text-white">people</span>
+              </div>
+              <p class="text-xs sm:text-base text-white/95 font-bold">
+                are currently in <span id="occupancy-room" class="font-extrabold text-white">Room 313</span>
+              </p>
+            </div>
+
+            <div class="mt-3 flex items-center justify-start relative z-10">
+              <span id="tier-badge" class="hero-pill-badge text-xs sm:text-sm font-black">TIER: MEDIUM (16-35)</span>
+            </div>
+
+            <!-- Stylish 3-People Vector Graphic (Vertically Centered on Right Side) -->
+            <div
+              class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40 select-none z-0">
+              <svg width="110" height="75" class="w-24 h-16 sm:w-28 sm:h-20 text-amber-200" viewBox="0 0 120 80"
+                fill="currentColor">
+                <!-- Left person -->
+                <circle cx="28" cy="26" r="14" />
+                <path d="M4 68 C4 48, 52 48, 52 68 Z" />
+                <!-- Right person -->
+                <circle cx="92" cy="26" r="14" />
+                <path d="M68 68 C68 48, 116 48, 116 68 Z" />
+                <!-- Center person (front) -->
+                <circle cx="60" cy="20" r="16" />
+                <path d="M30 72 C30 46, 90 46, 90 72 Z" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Card 2: ENVIRONMENT - TEMPERATURE (Side-by-side on mobile) -->
+          <div class="occupai-card metric-card-light flex flex-col justify-between col-span-1">
+            <div class="card-subtitle-maroon text-[10px] sm:text-xs">ENVIRONMENT - TEMPERATURE</div>
+            <div class="flex items-center justify-between my-1">
+              <div class="text-xl sm:text-3xl font-black text-[#1A1A1A]" id="val-temperature">24.5°C</div>
+              <div class="thermometer-icon-wrapper">
+                <i class="fas fa-temperature-full text-xl sm:text-3xl text-[#7D141D]"></i>
+              </div>
+            </div>
+            <div class="text-[10px] sm:text-sm text-gray-600 font-bold">currently in Room 313</div>
+          </div>
+
+          <!-- Card 3: ENVIRONMENT - LUMINANCE (Side-by-side on mobile) -->
+          <div class="occupai-card metric-card-light flex flex-col justify-between col-span-1">
+            <div class="card-subtitle-maroon text-[10px] sm:text-xs">ENVIRONMENT - LUMINANCE</div>
+            <div class="space-y-0.5 my-1">
+              <div class="text-xs sm:text-lg font-black text-[#1A1A1A]">
+                Indoor <span id="val-indoor-lux" class="font-black">480 lx</span>
+              </div>
+              <div class="text-xs sm:text-lg font-black text-[#1A1A1A]">
+                Outdoor <span id="val-outdoor-lux" class="font-black">1200 lx</span>
+              </div>
+            </div>
+            <div class="text-[10px] sm:text-sm text-gray-600 font-bold">currently in Room 313</div>
+          </div>
+
+        </section>
+
+        <!-- ROW 2: TREND CHART & HARDWARE STATUS -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-3 flex-1">
+
+          <!-- OCCUPANCY TREND - TODAY (7 Columns) -->
+          <div
+            class="lg:col-span-7 occupai-card metric-card-light flex flex-col justify-between min-h-[280px] lg:min-h-[360px]">
+            <div class="flex items-center justify-between mb-1 relative">
+              <span class="card-subtitle-maroon text-xs sm:text-sm font-black tracking-wider"
+                id="trend-card-title">OCCUPANCY TREND - TODAY</span>
+
+              <div class="relative inline-block text-left" id="trend-dropdown-wrapper">
+                <button onclick="toggleTrendDropdown(event)" class="dropdown-pill text-xs sm:text-sm font-bold"
+                  id="trend-dropdown-btn">
+                  TODAY <span id="trend-dropdown-arrow">▼</span>
+                </button>
+
+                <!-- Dropdown Menu Box -->
+                <div id="trend-dropdown-menu" class="hidden trend-dropdown-menu">
+                  <div onclick="selectTrendRange('Today')" class="trend-dropdown-item">
+                    Today
+                  </div>
+                  <div onclick="selectTrendRange('Yesterday')" class="trend-dropdown-item">
+                    Yesterday
+                  </div>
+                  <div class="trend-dropdown-date-row">
+                    <span>Enter Date:</span>
+                    <input type="date" id="trend-custom-date" onchange="selectTrendCustomDate(this.value)"
+                      class="trend-dropdown-date-input">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-wrapper flex-1 min-h-[200px]">
+              <div class="chart-y-axis-label">OCCUPANCY COUNT</div>
+              <div class="chart-canvas-box flex-1 min-h-[200px]">
+                <canvas id="occupancyChart"></canvas>
+              </div>
+            </div>
+            <div class="chart-x-axis-label text-xs font-black">TIME</div>
+          </div>
+
+          <!-- HARDWARE STATUS SUMMARY (5 Columns) -->
+          <div
+            class="lg:col-span-5 occupai-card hw-gradient-card flex flex-col justify-between min-h-[280px] lg:min-h-[360px]">
+            <div class="flex flex-col h-full justify-between">
+              <div>
+                <div class="card-subtitle-white text-xs sm:text-sm font-black tracking-wider">HARDWARE STATUS SUMMARY
+                </div>
+                <div class="mt-1 mb-1.5 flex items-baseline gap-1.5" id="hw-summary-title">
+                  # / # Online
+                </div>
+              </div>
+              <div class="space-y-1 flex-1" id="hw-nodes-list">
+                <!-- Dynamic hardware status items list -->
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ROW 3: UTILITY STATUS TABLE CARD -->
+        <section class="occupai-card utility-gradient-card flex-shrink-0">
+          <div class="card-subtitle-white mb-2">UTILITY STATUS — LIGHTING / BLINDS / AC</div>
+
+          <div class="overflow-x-auto">
+            <table class="utility-table w-full">
+              <thead>
+                <tr>
+                  <th class="text-left">Device</th>
+                  <th class="text-left">Status</th>
+                  <th class="text-left">Detail</th>
+                  <th class="text-right">Toggle</th>
+                </tr>
+              </thead>
+              <tbody id="utility-status-table-body">
+                <!-- JS dynamic table rows -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- VIEW 2: UTILITY CONTROL VIEW -->
+      <div id="view-controls" class="spa-view hidden space-y-3">
+        <!-- Desktop Header Bar -->
+        <header class="main-header hidden md:flex items-center justify-between">
+          <h1 class="header-title">Utility Control</h1>
+          <div class="header-actions">
+            <button class="icon-circle-btn" title="Notifications">
+              <i class="fas fa-bell text-[#7D141D] text-sm"></i>
+            </button>
+            <button onclick="manualRefresh()" class="refresh-pill-btn">
+              <span>Refresh</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Mobile Page Title -->
+        <div class="md:hidden px-1">
+          <h1 class="text-xl font-extrabold text-[#7D141D] tracking-tight">
+            Utility Control
+          </h1>
+        </div>
+
+        <!-- Mode Hero Card -->
+        <section class="occupai-card hero-gradient-card">
+          <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+            <div class="space-y-0.5">
+              <div class="card-subtitle-white">MODE</div>
+              <h2 class="text-2xl lg:text-3xl font-black text-white tracking-tight" id="control-mode-title">Automated
+                Control</h2>
+              <p class="text-xs sm:text-base text-white/95 font-bold">
+                System is following occupancy-based rule logic.
+              </p>
+              <p class="text-xs sm:text-sm text-amber-100 font-extrabold italic" id="last-auto-adj-text">
+                Last auto-adjustment: 2 min ago.
+              </p>
+            </div>
+            <div class="flex justify-end self-end shrink-0">
+              <button onclick="toggleControlMode()" class="revert-btn-white shadow-md hover:bg-amber-50 transition"
+                id="revert-mode-btn">
+                Revert to Manual
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Mobile Category Carousel Header Pill -->
+        <div class="category-carousel-header lg:hidden my-2">
+          <button onclick="prevCategory()" class="carousel-arrow-btn">&lt;</button>
+          <span class="category-title" id="current-category-label">LIGHTING</span>
+          <button onclick="nextCategory()" class="carousel-arrow-btn">&gt;</button>
+        </div>
+
+        <!-- Middle 3-Column Devices Grid (Carousel on Mobile, 3 Columns on Desktop) -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+
+          <!-- Column 1: LIGHTING -->
+          <div id="cat-lighting" class="occupai-card metric-card-light space-y-2 lg:block">
+            <div class="card-subtitle-maroon hidden lg:block">LIGHTING</div>
+            <div id="utility-lighting-container" class="space-y-2">
+              <!-- JS rendered lighting items -->
+            </div>
+          </div>
+
+          <!-- Column 2: BLIND -->
+          <div id="cat-blinds" class="occupai-card metric-card-light space-y-2 hidden lg:block">
+            <div class="card-subtitle-maroon hidden lg:block">BLIND</div>
+            <div id="utility-blinds-container" class="space-y-2">
+              <!-- JS rendered blinds items -->
+            </div>
+          </div>
+
+          <!-- Column 3: AIR CONDITIONING -->
+          <div id="cat-air-conditioning" class="occupai-card metric-card-light space-y-2 hidden lg:block">
+            <div class="card-subtitle-maroon hidden lg:block">AIR CONDITIONING</div>
+            <div id="utility-ac-container" class="space-y-2">
+              <!-- JS rendered AC items -->
+            </div>
+          </div>
+
+        </section>
+
+        <!-- Bottom 2-Column Tables Grid (Override Activity first on Mobile) -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-3">
+
+          <!-- Top Table: RECENT OVERRIDE ACTIVITY (7 Cols on Desktop, 1st on Mobile) -->
+          <div class="lg:col-span-7 occupai-card metric-card-light space-y-1.5">
+            <div class="card-subtitle-maroon mb-1.5">RECENT OVERRIDE ACTIVITY</div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-sm sm:text-base">
+                <thead>
+                  <tr class="border-b border-gray-300 text-xs sm:text-sm font-black uppercase text-[#7D141D]">
+                    <th class="py-2.5 px-3">Time</th>
+                    <th class="py-2.5 px-3">Device</th>
+                    <th class="py-2.5 px-3">Action</th>
+                    <th class="py-2.5 px-3">Status</th>
+                    <th class="py-2.5 px-3 text-right">By</th>
+                  </tr>
+                </thead>
+                <tbody id="override-activity-rows" class="text-gray-800 font-bold"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Bottom Table: OCCUPANCY-LINKED AUTOMATION REFERENCE (5 Cols on Desktop, 2nd on Mobile) -->
+          <div class="lg:col-span-5 occupai-card metric-card-light space-y-1.5 flex flex-col justify-between">
+            <div>
+              <div class="card-subtitle-maroon mb-1.5">OCCUPANCY-LINKED AUTOMATION REFERENCE</div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm sm:text-base">
+                  <thead>
+                    <tr class="border-b border-gray-300 text-xs sm:text-sm font-black uppercase text-[#7D141D]">
+                      <th class="py-2.5 px-3">State</th>
+                      <th class="py-2.5 px-3 text-center">Threshold</th>
+                      <th class="py-2.5 px-3 text-center">Lighting</th>
+                      <th class="py-2.5 px-3 text-right">AC</th>
+                    </tr>
+                  </thead>
+                  <tbody id="automation-rules-rows" class="text-gray-800 font-bold"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="pt-2 border-t border-gray-300 text-xs sm:text-sm text-[#7D141D] font-black"
+              id="current-tier-expectation-text"></div>
+          </div>
+
+        </section>
+
+      </div>
+
+      <!-- VIEW 3: HARDWARE STATUS VIEW -->
+      <div id="view-hardware" class="spa-view hidden space-y-3">
+
+        <!-- Desktop Header Bar -->
+        <header class="main-header hidden md:flex items-center justify-between">
+          <h1 class="header-title">Hardware Status</h1>
+          <div class="header-actions">
+            <button class="icon-circle-btn" title="Notifications">
+              <i class="fas fa-bell text-[#7D141D] text-sm"></i>
+            </button>
+            <button onclick="manualRefresh()" class="refresh-pill-btn">
+              <span>Refresh</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Mobile Page Title -->
+        <div class="md:hidden px-1">
+          <h1 class="text-xl font-extrabold text-[#7D141D] tracking-tight">
+            Hardware Status
+          </h1>
+        </div>
+
+        <!-- 1. Top 3-Column Summary Bar -->
+        <section class="occupai-card hero-gradient-card">
+          <div class="grid grid-cols-3 divide-x divide-white/20 text-center py-1.5 items-center">
+            <div class="flex flex-col items-center justify-center px-1">
+              <div class="text-2xl sm:text-3xl font-black text-white" id="hw-status-summary-online">5 / 5</div>
+              <div class="text-[10px] sm:text-xs text-white/90 font-extrabold uppercase mt-1">Hardware Online</div>
+            </div>
+            <div class="flex flex-col items-center justify-center px-1">
+              <div class="text-xs sm:text-lg font-black text-white leading-tight">
+                <div>MQTT :</div>
+                <div class="text-emerald-300 font-extrabold">Connected</div>
+              </div>
+              <div class="text-[10px] sm:text-xs text-white/90 font-extrabold uppercase mt-1">Broker Status</div>
+            </div>
+            <div class="flex flex-col items-center justify-center px-1">
+              <div class="text-2xl sm:text-3xl font-black text-white">0</div>
+              <div class="text-[10px] sm:text-xs text-white/90 font-extrabold uppercase mt-1">Active Faults</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. Hardware Nodes Grid (Side-by-side Camera 1 & Camera 2 on mobile) -->
+        <section class="grid grid-cols-2 md:grid-cols-2 gap-3">
+
+          <!-- Card 1: Raspberry Pi 4 (Full width on mobile, 1 col on desktop) -->
+          <div class="occupai-card metric-card-light space-y-2 flex flex-col justify-between col-span-2 md:col-span-1">
+            <div>
+              <div class="flex items-center justify-between border-b border-gray-300 pb-2 mb-2">
+                <span class="font-black text-[#7D141D] text-base sm:text-lg">Raspberry Pi 4</span>
+                <span class="status-badge-green">• Online</span>
+              </div>
+              <div class="space-y-2 text-xs sm:text-base text-gray-800 font-bold">
+                <div class="flex justify-between border-b border-gray-200 pb-1.5">
+                  <span class="text-gray-600 font-bold">Role</span>
+                  <span class="font-extrabold text-[#7D141D]">Vision + IR break-beam processing</span>
+                </div>
+                <div class="flex justify-between border-b border-gray-200 pb-1.5">
+                  <span class="text-gray-600 font-bold">Uptime</span>
+                  <span class="font-extrabold text-gray-900">4h 12m</span>
+                </div>
+                <div class="flex justify-between pb-1">
+                  <span class="text-gray-600 font-bold">CPU / Temp</span>
+                  <span class="font-extrabold text-gray-900">22°C</span>
+                </div>
+              </div>
+            </div>
+            <button onclick="switchSPATab('history')" class="view-logs-btn">View Logs</button>
+          </div>
+
+          <!-- Card 2: ESP32-S3 N16R8 (Full width on mobile, 1 col on desktop) -->
+          <div class="occupai-card metric-card-light space-y-2 flex flex-col justify-between col-span-2 md:col-span-1">
+            <div>
+              <div class="flex items-center justify-between border-b border-gray-300 pb-2 mb-2">
+                <span class="font-black text-[#7D141D] text-base sm:text-lg">ESP32-S3 N16R8</span>
+                <span class="status-badge-off">• Offline</span>
+              </div>
+              <div class="space-y-2 text-xs sm:text-base text-gray-800 font-bold">
+                <div class="flex justify-between border-b border-gray-200 pb-1.5">
+                  <span class="text-gray-600 font-bold">Role</span>
+                  <span class="font-extrabold text-[#7D141D]">PIR, actuation</span>
+                </div>
+                <div class="flex justify-between pb-1">
+                  <span class="text-gray-600 font-bold">Uptime</span>
+                  <span class="font-extrabold text-gray-900">4h 12m</span>
+                </div>
+              </div>
+            </div>
+            <button onclick="switchSPATab('history')" class="view-logs-btn">View Logs</button>
+          </div>
+
+          <!-- Card 3: Camera 1 (Side-by-side on mobile, 1 col on desktop) -->
+          <div class="occupai-card metric-card-light space-y-2 col-span-1">
+            <div class="flex items-center justify-between border-b border-gray-300 pb-2 mb-2">
+              <span class="font-black text-[#7D141D] text-sm sm:text-lg">Camera 1</span>
+              <span class="status-badge-green text-xs sm:text-sm">• Online</span>
+            </div>
+            <div class="space-y-1.5 text-xs sm:text-base text-gray-800 font-bold">
+              <div class="flex justify-between border-b border-gray-200 pb-1.5">
+                <span class="text-gray-600 font-bold">Feed to</span>
+                <span class="font-extrabold text-[#7D141D] text-[11px] sm:text-base">Raspberry Pi (CSI Port)</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600 font-bold">Uptime</span>
+                <span class="font-extrabold text-gray-900">4h 12m</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Camera 2 (Side-by-side on mobile, 1 col on desktop) -->
+          <div class="occupai-card metric-card-light space-y-2 col-span-1">
+            <div class="flex items-center justify-between border-b border-gray-300 pb-2 mb-2">
+              <span class="font-black text-[#7D141D] text-sm sm:text-lg">Camera 2</span>
+              <span class="status-badge-green text-xs sm:text-sm">• Online</span>
+            </div>
+            <div class="space-y-1.5 text-xs sm:text-base text-gray-800 font-bold">
+              <div class="flex justify-between border-b border-gray-200 pb-1.5">
+                <span class="text-gray-600 font-bold">Feed to</span>
+                <span class="font-extrabold text-[#7D141D] text-[11px] sm:text-base">Raspberry Pi (CSI Port)</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600 font-bold">Uptime</span>
+                <span class="font-extrabold text-gray-900">4h 12m</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 5: HC-SR501 PIR Sensors (Full width on mobile, 1 col on desktop) -->
+          <div class="occupai-card metric-card-light space-y-2 col-span-2 md:col-span-1">
+            <div class="flex items-center justify-between border-b border-gray-300 pb-2">
+              <span class="font-black text-[#7D141D] text-base sm:text-lg">HC-SR501 PIR Sensors</span>
+              <span class="status-badge-green">• 2 / 2 Online</span>
+            </div>
+            <div class="space-y-2">
+              <div class="sub-sensor-card flex items-center justify-between py-2 px-3">
+                <span class="font-extrabold text-[#7D141D] text-xs sm:text-base">PIR Sensor 1</span>
+                <span class="text-[10px] sm:text-sm font-black text-emerald-600">• Online – last trigger 45 sec
+                  ago</span>
+              </div>
+              <div class="sub-sensor-card flex items-center justify-between py-2 px-3">
+                <span class="font-extrabold text-[#7D141D] text-xs sm:text-base">PIR Sensor 2</span>
+                <span class="text-[10px] sm:text-sm font-black text-emerald-600">• Online – last trigger 12 sec
+                  ago</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 6: IR Break-Beam Sensors (Full width on mobile, 1 col on desktop) -->
+          <div class="occupai-card metric-card-light space-y-2 col-span-2 md:col-span-1">
+            <div class="flex items-center justify-between border-b border-gray-300 pb-2">
+              <span class="font-black text-[#7D141D] text-base sm:text-lg">IR Break-Beam Sensors</span>
+              <span class="status-badge-green">• 2 / 2 Online</span>
+            </div>
+            <div class="space-y-2">
+              <div class="sub-sensor-card flex items-center justify-between py-2 px-3">
+                <span class="font-extrabold text-[#7D141D] text-xs sm:text-base">IR Sensor 1</span>
+                <span class="text-[10px] sm:text-sm font-black text-emerald-600">• Online – last crossing 1 min
+                  ago</span>
+              </div>
+              <div class="sub-sensor-card flex items-center justify-between py-2 px-3">
+                <span class="font-extrabold text-[#7D141D] text-xs sm:text-base">IR Sensor 2</span>
+                <span class="text-[10px] sm:text-sm font-black text-emerald-600">• Online – last crossing 6 min
+                  ago</span>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+      </div>
+
+      <!-- VIEW 4: LOGS / HISTORY VIEW -->
+      <div id="view-history" class="spa-view hidden space-y-3">
+
+        <!-- Desktop Header Bar -->
+        <header class="main-header hidden md:flex items-center justify-between">
+          <h1 class="header-title">Logs / History</h1>
+          <div class="header-actions">
+            <button class="icon-circle-btn" title="Notifications">
+              <i class="fas fa-bell text-[#7D141D] text-sm"></i>
+            </button>
+            <button onclick="manualRefresh()" class="refresh-pill-btn">
+              <span>Refresh</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Mobile Page Title -->
+        <div class="md:hidden px-1">
+          <h1 class="text-xl font-extrabold text-[#7D141D] tracking-tight">
+            Logs / History
+          </h1>
+        </div>
+
+        <!-- 3 Sub-Tab Control Buttons -->
+        <div class="grid grid-cols-3 gap-2">
+          <button onclick="switchLogSubTab('occupancy')" id="log-tab-btn-occupancy" class="log-subtab-btn active">
+            Occupancy Logs
+          </button>
+          <button onclick="switchLogSubTab('actuation')" id="log-tab-btn-actuation" class="log-subtab-btn">
+            Actuation Events
+          </button>
+          <button onclick="switchLogSubTab('override')" id="log-tab-btn-override" class="log-subtab-btn">
+            Override Events
+          </button>
+        </div>
+
+        <!-- Top Gradient Filter Bar (5 Filter Controls) -->
+        <section class="occupai-card filter-bar-dock">
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-2 items-center w-full">
+
+            <!-- Filter 1: Date Filter -->
+            <div class="relative w-full" id="log-date-wrapper">
+              <button onclick="toggleLogFilter('date')" class="filter-pill-btn w-full flex items-center justify-between"
+                id="log-date-btn">
+                <span class="truncate flex items-center gap-1.5 text-xs sm:text-sm font-bold"><i
+                    class="far fa-calendar-alt text-[#7D141D]/70 text-sm"></i><span
+                    class="font-black text-[#7D141D]/70 mr-0.5">Date:</span>Today</span> <span id="log-date-arrow"
+                  class="text-xs text-[#7D141D]">▼</span>
+              </button>
+              <div id="log-date-menu" class="hidden trend-dropdown-menu">
+                <div onclick="selectLogFilter('date', 'Today')" class="trend-dropdown-item">Today</div>
+                <div onclick="selectLogFilter('date', 'Yesterday')" class="trend-dropdown-item">Yesterday</div>
+                <div class="trend-dropdown-date-row">
+                  <span>Enter:</span>
+                  <input type="date" onchange="selectLogFilter('date', this.value)" class="trend-dropdown-date-input">
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter 2: From Time Filter -->
+            <div class="relative w-full" id="log-from-wrapper">
+              <button onclick="toggleLogFilter('from')" class="filter-pill-btn w-full flex items-center justify-between"
+                id="log-from-btn">
+                <span class="truncate flex items-center gap-1.5 text-xs sm:text-sm font-bold"><i
+                    class="far fa-clock text-[#7D141D]/70 text-sm"></i><span
+                    class="font-black text-[#7D141D]/70 mr-0.5">From:</span>Start</span> <span id="log-from-arrow"
+                  class="text-xs text-[#7D141D]">▼</span>
+              </button>
+              <div id="log-from-menu" class="hidden time-picker-dropdown">
+                <div class="time-spinner-box">
+                  <input type="time" id="log-from-input" step="1" onchange="selectLogFilter('from', this.value)"
+                    class="time-picker-input">
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter 3: To Time Filter -->
+            <div class="relative w-full" id="log-to-wrapper">
+              <button onclick="toggleLogFilter('to')" class="filter-pill-btn w-full flex items-center justify-between"
+                id="log-to-btn">
+                <span class="truncate flex items-center gap-1.5 text-xs sm:text-sm font-bold"><i
+                    class="far fa-clock text-[#7D141D]/70 text-sm"></i><span
+                    class="font-black text-[#7D141D]/70 mr-0.5">To:</span>End</span> <span id="log-to-arrow"
+                  class="text-xs text-[#7D141D]">▼</span>
+              </button>
+              <div id="log-to-menu" class="hidden time-picker-dropdown">
+                <div class="time-spinner-box">
+                  <input type="time" id="log-to-input" step="1" onchange="selectLogFilter('to', this.value)"
+                    class="time-picker-input">
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter 4: Event Type Filter -->
+            <div class="relative w-full" id="log-event-wrapper">
+              <button onclick="toggleLogFilter('event')"
+                class="filter-pill-btn w-full flex items-center justify-between" id="log-event-btn">
+                <span class="truncate flex items-center gap-1.5 text-xs sm:text-sm font-bold"><i
+                    class="fas fa-filter text-[#7D141D]/70 text-sm"></i><span
+                    class="font-black text-[#7D141D]/70 mr-0.5">Event:</span>ALL</span> <span id="log-event-arrow"
+                  class="text-xs text-[#7D141D]">▼</span>
+              </button>
+              <div id="log-event-menu" class="hidden trend-dropdown-menu">
+                <div onclick="selectLogFilter('event', 'All')" class="trend-dropdown-item">All</div>
+                <div onclick="selectLogFilter('event', 'Entry')" class="trend-dropdown-item">Entry</div>
+                <div onclick="selectLogFilter('event', 'Exit')" class="trend-dropdown-item">Exit</div>
+                <div onclick="selectLogFilter('event', 'Presence Sustained')"
+                  class="trend-dropdown-item text-amber-700">Presence Sustained</div>
+                <div onclick="selectLogFilter('event', 'Room Vacated')" class="trend-dropdown-item text-amber-700">Room
+                  Vacated</div>
+                <div onclick="selectLogFilter('event', 'System Started')" class="trend-dropdown-item">System Started
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter 5: Search Input Pill -->
+            <div class="relative w-full col-span-2 md:col-span-1">
+              <div
+                class="filter-pill-search-wrapper w-full flex items-center bg-white rounded-full px-3.5 py-2 shadow-sm border border-[#7D141D]/20 focus-within:ring-2 focus-within:ring-[#7D141D]/30 transition-all">
+                <i class="fas fa-search text-[#7D141D]/70 text-sm mr-2"></i>
+                <input type="text" id="log-search-input" onkeyup="filterLogRows(this.value)"
+                  placeholder="Search logs..."
+                  class="w-full text-xs sm:text-sm font-bold bg-transparent text-[#7D141D] placeholder-[#7D141D]/60 outline-none">
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- SUB-PANEL 1: OCCUPANCY LOGS -->
+        <div id="log-panel-occupancy" class="log-subpanel space-y-2">
+          <section class="occupai-card metric-card-light space-y-2">
+            <div class="card-subtitle-maroon text-sm font-black tracking-wider text-[#7D141D]">OCCUPANCY LOGS — SHOWING
+              10 OF 20 RECORDS</div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr class="border-b border-gray-300 text-xs sm:text-sm font-black uppercase text-[#7D141D]">
+                    <th class="py-3 px-3">Timestamp</th>
+                    <th class="py-3 px-3">Event</th>
+                    <th class="py-3 px-3 text-center">Count</th>
+                    <th class="py-3 px-3 text-center">Tier</th>
+                    <th class="py-3 px-3 text-right">Source</th>
+                  </tr>
+                </thead>
+                <tbody id="occupancy-logs-tbody" class="text-gray-800 font-bold"></tbody>
+              </table>
+            </div>
+
+            <div
+              class="flex items-center justify-between pt-3 border-t border-gray-200 text-xs sm:text-sm text-gray-700 font-bold">
+              <button
+                class="px-4 py-1.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-sm font-black text-[#7D141D]">&lt;</button>
+              <div class="flex items-center gap-2">
+                <span class="text-xs sm:text-sm font-bold">Rows per page:</span>
+                <select
+                  class="bg-gray-100 border border-gray-300 rounded-md px-3 py-1 text-xs sm:text-sm text-[#7D141D] font-extrabold outline-none">
+                  <option>10 ▼</option>
+                  <option>20 ▼</option>
+                </select>
+              </div>
+              <button
+                class="px-4 py-1.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-sm font-black text-[#7D141D]">&gt;</button>
+            </div>
+          </section>
+        </div>
+
+        <!-- SUB-PANEL 2: ACTUATION EVENTS -->
+        <div id="log-panel-actuation" class="log-subpanel hidden space-y-2">
+          <section class="occupai-card metric-card-light space-y-2">
+            <div class="card-subtitle-maroon text-sm font-black tracking-wider text-[#7D141D]">ACTUATION EVENTS —
+              SHOWING 10 OF 20 RECORDS</div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr class="border-b border-gray-300 text-xs sm:text-sm font-black uppercase text-[#7D141D]">
+                    <th class="py-3 px-3">Timestamp</th>
+                    <th class="py-3 px-3">Device</th>
+                    <th class="py-3 px-3">Action</th>
+                    <th class="py-3 px-3 text-right">Result</th>
+                  </tr>
+                </thead>
+                <tbody id="actuation-events-tbody" class="text-gray-800 font-bold"></tbody>
+              </table>
+            </div>
+
+            <div
+              class="flex items-center justify-between pt-3 border-t border-gray-200 text-xs sm:text-sm text-gray-700 font-bold">
+              <button
+                class="px-4 py-1.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-sm font-black text-[#7D141D]">&lt;</button>
+              <div class="flex items-center gap-2">
+                <span class="text-xs sm:text-sm font-bold">Rows per page:</span>
+                <select
+                  class="bg-gray-100 border border-gray-300 rounded-md px-3 py-1 text-xs sm:text-sm text-[#7D141D] font-extrabold outline-none">
+                  <option>10 ▼</option>
+                  <option>20 ▼</option>
+                </select>
+              </div>
+              <button
+                class="px-4 py-1.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-sm font-black text-[#7D141D]">&gt;</button>
+            </div>
+          </section>
+        </div>
+
+        <!-- SUB-PANEL 3: OVERRIDE EVENTS -->
+        <div id="log-panel-override" class="log-subpanel hidden space-y-2">
+          <section class="occupai-card hero-orange-card">
+            <div class="grid grid-cols-4 divide-x divide-white/20 text-center py-1.5">
+              <div>
+                <div class="text-xl sm:text-3xl font-black text-white" id="override-stat-rate">96.4%</div>
+                <div class="text-[10px] sm:text-xs text-amber-100/90 font-extrabold uppercase mt-0.5">Override Success
+                  Rate</div>
+              </div>
+              <div>
+                <div class="text-xl sm:text-3xl font-black text-white" id="override-stat-total">27</div>
+                <div class="text-[10px] sm:text-xs text-amber-100/90 font-extrabold uppercase mt-0.5">Total Overrides
+                  Today</div>
+              </div>
+              <div>
+                <div class="text-xl sm:text-3xl font-black text-white" id="override-stat-failed">1</div>
+                <div class="text-[10px] sm:text-xs text-amber-100/90 font-extrabold uppercase mt-0.5">Failed Commands
+                </div>
+              </div>
+              <div>
+                <div class="text-xl sm:text-3xl font-black text-white" id="override-stat-latency">1.3 sec</div>
+                <div class="text-[10px] sm:text-xs text-amber-100/90 font-extrabold uppercase mt-0.5">Avg. Override
+                  Latency</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="occupai-card metric-card-light space-y-2">
+            <div class="card-subtitle-maroon text-sm font-black tracking-wider text-[#7D141D]">OVERRIDE EVENTS — SHOWING
+              10 OF 20 RECORDS</div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr class="border-b border-gray-300 text-xs sm:text-sm font-black uppercase text-[#7D141D]">
+                    <th class="py-3 px-3">Timestamp</th>
+                    <th class="py-3 px-3">Device</th>
+                    <th class="py-3 px-3">Action</th>
+                    <th class="py-3 px-3 text-center">Issued By</th>
+                    <th class="py-3 px-3 text-center">Latency</th>
+                    <th class="py-3 px-3 text-right">Result</th>
+                  </tr>
+                </thead>
+                <tbody id="override-events-tbody" class="text-gray-800 font-bold"></tbody>
+              </table>
+            </div>
+
+            <div
+              class="flex items-center justify-between pt-3 border-t border-gray-200 text-xs sm:text-sm text-gray-700 font-bold">
+              <button
+                class="px-4 py-1.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-sm font-black text-[#7D141D]">&lt;</button>
+              <div class="flex items-center gap-2">
+                <span class="text-xs sm:text-sm font-bold">Rows per page:</span>
+                <select
+                  class="bg-gray-100 border border-gray-300 rounded-md px-3 py-1 text-xs sm:text-sm text-[#7D141D] font-extrabold outline-none">
+                  <option>10 ▼</option>
+                  <option>20 ▼</option>
+                </select>
+              </div>
+              <button
+                class="px-4 py-1.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-sm font-black text-[#7D141D]">&gt;</button>
+            </div>
+          </section>
+        </div>
+
+      </div>
+
+      <!-- VIEW 5: SETTINGS VIEW -->
+      <div id="view-settings" class="spa-view hidden space-y-3">
+
+        <!-- Desktop Header Bar -->
+        <header class="main-header hidden md:flex items-center justify-between">
+          <h1 class="header-title">Settings</h1>
+          <div class="header-actions">
+            <button class="icon-circle-btn" title="Notifications">
+              <i class="fas fa-bell text-[#7D141D] text-sm"></i>
+            </button>
+            <button onclick="manualRefresh()" class="refresh-pill-btn">
+              <span>Refresh</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Mobile Page Title -->
+        <div class="md:hidden px-1">
+          <h1 class="text-xl font-extrabold text-[#7D141D] tracking-tight">
+            Settings
+          </h1>
+        </div>
+
+        <!-- Main Settings Grid Layout (Horizontal Row on Mobile, Left Sidebar on Desktop) -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+
+          <!-- Sub-tab Navigation (3-Column Row on Mobile, Left Sidebar on Desktop) -->
+          <div class="grid grid-cols-3 md:flex md:flex-col md:col-span-3 gap-1.5 md:gap-2">
+            <button onclick="switchSettingsSubTab('general')" id="set-tab-btn-general"
+              class="set-subtab-btn active w-full">
+              General Settings
+            </button>
+            <button onclick="switchSettingsSubTab('users')" id="set-tab-btn-users" class="set-subtab-btn w-full">
+              User Accounts
+            </button>
+            <button onclick="switchSettingsSubTab('system')" id="set-tab-btn-system" class="set-subtab-btn w-full">
+              System Info
+            </button>
+          </div>
+
+          <!-- RIGHT PANEL: Sub-tab Content Panels (9 Cols) -->
+          <div class="md:col-span-9 space-y-3">
+
+            <!-- SECTION TITLE -->
+            <div class="card-subtitle-maroon text-xs tracking-widest font-black uppercase text-[#7D141D]"
+              id="settings-section-title">
+              GENERAL SETTINGS
+            </div>
+
+            <!-- SUB-TAB 1: GENERAL SETTINGS -->
+            <div id="set-panel-general" class="set-subpanel space-y-3">
+
+              <!-- Occupancy Thresholds Card -->
+              <section class="occupai-card metric-card-light space-y-2">
+                <div class="card-subtitle-maroon">OCCUPANCY THRESHOLDS</div>
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left border-collapse text-sm sm:text-base">
+                    <thead>
+                      <tr class="border-b border-gray-300 text-xs sm:text-sm font-black uppercase text-[#7D141D]">
+                        <th class="py-2.5 px-3">State</th>
+                        <th class="py-2.5 px-3 text-center">Min</th>
+                        <th class="py-2.5 px-3 text-center">Max</th>
+                        <th class="py-2.5 px-3 text-center">Lighting</th>
+                        <th class="py-2.5 px-3 text-right">AC Unit</th>
+                      </tr>
+                    </thead>
+                    <tbody class="text-gray-800 font-bold">
+                      <tr class="border-b border-gray-200">
+                        <td class="py-3 px-3 font-extrabold">Vacant</td>
+                        <td class="py-3 px-3 text-center font-mono">0</td>
+                        <td class="py-3 px-3 text-center font-mono">0</td>
+                        <td class="py-3 px-3 text-center font-bold text-gray-500">OFF</td>
+                        <td class="py-3 px-3 text-right font-bold text-gray-500">OFF</td>
+                      </tr>
+                      <tr class="border-b border-gray-200">
+                        <td class="py-3 px-3 font-extrabold">Low</td>
+                        <td class="py-3 px-3 text-center"><input type="text" value="1"
+                            class="w-12 text-center border border-gray-300 rounded-md px-1.5 py-1 text-sm sm:text-base font-black text-[#7D141D]">
+                        </td>
+                        <td class="py-3 px-3 text-center"><input type="text" value="15"
+                            class="w-12 text-center border border-gray-300 rounded-md px-1.5 py-1 text-sm sm:text-base font-black text-[#7D141D]">
+                        </td>
+                        <td class="py-3 px-3 text-center"><input type="text" value="40%"
+                            class="w-14 text-center border border-gray-300 rounded-md px-1.5 py-1 text-sm sm:text-base font-black text-[#7D141D]">
+                        </td>
+                        <td class="py-3 px-3 text-right font-black text-emerald-600">ON</td>
+                      </tr>
+                      <tr class="border-b border-gray-200">
+                        <td class="py-3 px-3 font-extrabold">Medium</td>
+                        <td class="py-3 px-3 text-center"><input type="text" value="16"
+                            class="w-12 text-center border border-gray-300 rounded-md px-1.5 py-1 text-sm sm:text-base font-black text-[#7D141D]">
+                        </td>
+                        <td class="py-3 px-3 text-center"><input type="text" value="35"
+                            class="w-12 text-center border border-gray-300 rounded-md px-1.5 py-1 text-sm sm:text-base font-black text-[#7D141D]">
+                        </td>
+                        <td class="py-3 px-3 text-center"><input type="text" value="70%"
+                            class="w-14 text-center border border-gray-300 rounded-md px-1.5 py-1 text-sm sm:text-base font-black text-[#7D141D]">
+                        </td>
+                        <td class="py-3 px-3 text-right font-black text-emerald-600">ON</td>
+                      </tr>
+                      <tr>
+                        <td class="py-3 px-3 font-extrabold">High</td>
+                        <td class="py-3 px-3 text-center"><input type="text" value="36"
+                            class="w-12 text-center border border-gray-300 rounded-md px-1.5 py-1 text-sm sm:text-base font-black text-[#7D141D]">
+                        </td>
+                        <td class="py-3 px-3 text-center text-gray-400 font-bold">--</td>
+                        <td class="py-3 px-3 text-center"><input type="text" value="100%"
+                            class="w-14 text-center border border-gray-300 rounded-md px-1.5 py-1 text-sm sm:text-base font-black text-[#7D141D]">
+                        </td>
+                        <td class="py-3 px-3 text-right font-black text-emerald-600">ON</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="text-xs sm:text-sm text-gray-600 font-semibold italic pt-1">
+                  Changing thresholds affects rule-based automation logic in real time.
+                </div>
+              </section>
+
+              <!-- Device Labels Card -->
+              <section class="occupai-card metric-card-light space-y-2">
+                <div class="card-subtitle-maroon">DEVICE LABELS</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm sm:text-base">
+                  <div class="flex items-center justify-between bg-white/60 p-2 rounded-lg border border-gray-200">
+                    <span class="text-gray-800 font-bold">Light 1</span>
+                    <input type="text" value="Front Right"
+                      class="w-32 text-center border border-gray-300 rounded-full py-1 text-xs sm:text-sm font-extrabold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-2 rounded-lg border border-gray-200">
+                    <span class="text-gray-800 font-bold">Light 4</span>
+                    <input type="text" value="Middle Left"
+                      class="w-32 text-center border border-gray-300 rounded-full py-1 text-xs sm:text-sm font-extrabold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-2 rounded-lg border border-gray-200">
+                    <span class="text-gray-800 font-bold">Light 2</span>
+                    <input type="text" value="Front Left"
+                      class="w-32 text-center border border-gray-300 rounded-full py-1 text-xs sm:text-sm font-extrabold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-2 rounded-lg border border-gray-200">
+                    <span class="text-gray-800 font-bold">Light 5</span>
+                    <input type="text" value="Back Right"
+                      class="w-32 text-center border border-gray-300 rounded-full py-1 text-xs sm:text-sm font-extrabold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-2 rounded-lg border border-gray-200">
+                    <span class="text-gray-800 font-bold">Light 3</span>
+                    <input type="text" value="Middle Right"
+                      class="w-32 text-center border border-gray-300 rounded-full py-1 text-xs sm:text-sm font-extrabold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-2 rounded-lg border border-gray-200">
+                    <span class="text-gray-800 font-bold">Light 6</span>
+                    <input type="text" value="Back Left"
+                      class="w-32 text-center border border-gray-300 rounded-full py-1 text-xs sm:text-sm font-extrabold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-2 rounded-lg border border-gray-200">
+                    <span class="text-gray-800 font-bold">Blind 1</span>
+                    <input type="text" value="Front Window"
+                      class="w-32 text-center border border-gray-300 rounded-full py-1 text-xs sm:text-sm font-extrabold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-2 rounded-lg border border-gray-200">
+                    <span class="text-gray-800 font-bold">Blind 2</span>
+                    <input type="text" value="Rear Window"
+                      class="w-32 text-center border border-gray-300 rounded-full py-1 text-xs sm:text-sm font-extrabold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-2 rounded-lg border border-gray-200">
+                    <span class="text-gray-800 font-bold">AC Unit 1</span>
+                    <input type="text" value="Unit A"
+                      class="w-32 text-center border border-gray-300 rounded-full py-1 text-xs sm:text-sm font-extrabold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between bg-white/60 p-2 rounded-lg border border-gray-200">
+                    <span class="text-gray-800 font-bold">AC Unit 2</span>
+                    <input type="text" value="Unit B"
+                      class="w-32 text-center border border-gray-300 rounded-full py-1 text-xs sm:text-sm font-extrabold text-[#7D141D]">
+                  </div>
+                </div>
+              </section>
+
+              <!-- Automation Behavior Card -->
+              <section class="occupai-card metric-card-light space-y-2">
+                <div class="card-subtitle-maroon">AUTOMATION BEHAVIOR</div>
+                <div class="space-y-3 text-sm sm:text-base font-bold">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="font-bold text-gray-900">Auto-revert manual override</div>
+                      <div class="text-xs sm:text-sm text-gray-600 font-medium">Return to automatic control after set
+                        duration</div>
+                    </div>
+                    <label class="toggle-switch-ui"><input type="checkbox" checked><span
+                        class="toggle-slider"></span></label>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="font-bold text-gray-900">Override timeout duration</div>
+                      <div class="text-xs sm:text-sm text-gray-600 font-medium">Applies when auto-revert is enabled
+                      </div>
+                    </div>
+                    <input type="text" value="30 min"
+                      class="w-24 text-center border border-gray-300 rounded-full py-1 text-xs sm:text-sm font-extrabold text-[#7D141D]">
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="font-bold text-gray-900">Confirm before override</div>
+                      <div class="text-xs sm:text-sm text-gray-600 font-medium">Show confirmation dialog for manual
+                        actions</div>
+                    </div>
+                    <label class="toggle-switch-ui"><input type="checkbox" checked><span
+                        class="toggle-slider"></span></label>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Notifications Card -->
+              <section class="occupai-card metric-card-light space-y-2">
+                <div class="card-subtitle-maroon">NOTIFICATION</div>
+                <div class="space-y-3 text-sm sm:text-base font-bold">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="font-extrabold text-red-700">Node offline alert</div>
+                      <div class="text-xs sm:text-sm text-gray-600 font-medium">Notify when a hardware node disconnects
+                      </div>
+                    </div>
+                    <label class="toggle-switch-ui"><input type="checkbox" checked><span
+                        class="toggle-slider"></span></label>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="font-bold text-gray-900">Override timeout duration</div>
+                      <div class="text-xs sm:text-sm text-gray-600 font-medium">Notify when a device fails to execute a
+                        command</div>
+                    </div>
+                    <label class="toggle-switch-ui"><input type="checkbox" checked><span
+                        class="toggle-slider"></span></label>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="font-bold text-gray-900">Daily summary email</div>
+                      <div class="text-xs sm:text-sm text-gray-600 font-medium">Send end-of-day occupancy and energy
+                        summary</div>
+                    </div>
+                    <label class="toggle-switch-ui"><input type="checkbox" checked><span
+                        class="toggle-slider"></span></label>
+                  </div>
+                  <div class="flex items-center justify-between pt-1">
+                    <div>
+                      <div class="font-bold text-gray-900">Notification recipient</div>
+                      <div class="text-xs sm:text-sm text-gray-600 font-medium">Email or contact for alerts above</div>
+                    </div>
+                    <input type="text" value="jdelacruz@pup.edu.ph"
+                      class="w-56 text-center border border-gray-300 rounded-full py-1 text-xs sm:text-sm font-mono font-bold text-[#7D141D]">
+                  </div>
+                </div>
+              </section>
+
+              <!-- Bottom Action Buttons -->
+              <div class="flex justify-end gap-2 pt-1">
+                <button
+                  class="px-5 py-2 rounded-full border border-[#7D141D] bg-[#7D141D] text-white text-xs sm:text-sm font-black shadow hover:bg-[#9B1C28]">Discard
+                  Changes</button>
+                <button
+                  class="px-5 py-2 rounded-full bg-gradient-to-r from-[#BF3700] to-[#7D141D] text-white text-xs sm:text-sm font-black shadow hover:opacity-90">Save
+                  Settings</button>
+              </div>
+
+            </div>
+
+            <!-- SUB-TAB 2: USER ACCOUNTS -->
+            <div id="set-panel-users" class="set-subpanel hidden space-y-3">
+
+              <!-- Authorized Users Card -->
+              <section class="occupai-card metric-card-light space-y-2">
+                <div class="flex items-center justify-between">
+                  <div class="card-subtitle-maroon">AUTHORIZED USERS — 4 ACCOUNTS</div>
+                  <button
+                    class="px-4 py-1.5 rounded-full bg-[#7D141D] text-white text-xs sm:text-sm font-black hover:bg-[#9B1C28]">+
+                    Add</button>
+                </div>
+
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left border-collapse text-sm sm:text-base">
+                    <thead>
+                      <tr class="border-b border-gray-300 text-xs sm:text-sm font-black uppercase text-[#7D141D]">
+                        <th class="py-2.5 px-3">Name</th>
+                        <th class="py-2.5 px-3">Email</th>
+                        <th class="py-2.5 px-3 text-center">Role</th>
+                        <th class="py-2.5 px-3 text-center">Status</th>
+                        <th class="py-2.5 px-3 text-center">Last Login</th>
+                        <th class="py-2.5 px-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="authorized-users-tbody" class="text-gray-800 font-bold"></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <!-- Add New User Card -->
+              <section class="occupai-card metric-card-light space-y-2">
+                <div class="card-subtitle-maroon">ADD NEW USER</div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm sm:text-base">
+                  <input type="text" placeholder="Full Name"
+                    class="py-2 px-4 rounded-full border border-gray-300 bg-white text-xs sm:text-sm font-bold">
+                  <input type="email" placeholder="Email Address"
+                    class="py-2 px-4 rounded-full border border-gray-300 bg-white text-xs sm:text-sm font-bold">
+                  <div class="relative">
+                    <select
+                      class="w-full py-2 px-4 rounded-full border border-gray-300 bg-white text-gray-800 font-extrabold text-xs sm:text-sm outline-none appearance-none">
+                      <option value="">Role ▼</option>
+                      <option>Administrator</option>
+                      <option>Faculty</option>
+                      <option>Student (view-only)</option>
+                    </select>
+                  </div>
+                  <button
+                    class="py-2 px-5 rounded-full bg-gradient-to-r from-[#BF3700] to-[#7D141D] text-white font-black text-xs sm:text-sm shadow hover:opacity-90">
+                    Send Invite
+                  </button>
+                </div>
+                <div class="text-xs sm:text-sm text-gray-600 italic pt-0.5 font-medium">
+                  Invite sends a LAN-restricted account setup link to the email above.
+                </div>
+              </section>
+
+              <!-- Role Permissions Reference Card -->
+              <section class="occupai-card metric-card-light space-y-2">
+                <div class="card-subtitle-maroon">ROLE PERMISSIONS REFERENCE</div>
+                <div class="space-y-2 text-sm sm:text-base font-bold">
+                  <div class="border-b border-gray-200 pb-1.5">
+                    <div class="font-extrabold text-[#7D141D]">Administrator</div>
+                    <div class="text-xs sm:text-sm text-gray-600 font-medium">Full access — controls, settings, user
+                      management</div>
+                  </div>
+                  <div class="border-b border-gray-200 pb-1.5">
+                    <div class="font-extrabold text-[#7D141D]">Faculty</div>
+                    <div class="text-xs sm:text-sm text-gray-600 font-medium">Dashboard, Utility Control, Hardware
+                      Status, Logs</div>
+                  </div>
+                  <div>
+                    <div class="font-extrabold text-[#7D141D]">Student (view-only)</div>
+                    <div class="text-xs sm:text-sm text-gray-600 font-medium">Dashboard and Logs — read-only, no
+                      override access</div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Bottom Action Buttons -->
+              <div class="flex justify-end gap-2 pt-1">
+                <button
+                  class="px-5 py-2 rounded-full border border-[#7D141D] bg-[#7D141D] text-white text-xs sm:text-sm font-black shadow hover:bg-[#9B1C28]">Discard
+                  Changes</button>
+                <button
+                  class="px-5 py-2 rounded-full bg-gradient-to-r from-[#BF3700] to-[#7D141D] text-white text-xs sm:text-sm font-black shadow hover:opacity-90">Save
+                  Settings</button>
+              </div>
+
+            </div>
+
+            <!-- SUB-TAB 3: SYSTEM INFO -->
+            <div id="set-panel-system" class="set-subpanel hidden space-y-3">
+
+              <!-- Row 1: Software & Deployment (2 Columns) -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- Software Card -->
+                <section class="occupai-card metric-card-light space-y-1.5">
+                  <div class="card-subtitle-maroon">SOFTWARE</div>
+                  <div class="space-y-2 text-sm sm:text-base font-bold">
+                    <div class="flex justify-between border-b border-gray-200 pb-1.5"><span
+                        class="text-gray-600 font-bold">Dashboard Version</span><span
+                        class="font-mono font-extrabold text-gray-900" id="sys-sw-dash">v1.2.0</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1.5"><span
+                        class="text-gray-600 font-bold">Python</span><span
+                        class="font-mono font-extrabold text-gray-900" id="sys-sw-py">3.11.6</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1.5"><span
+                        class="text-gray-600 font-bold">Flask</span><span class="font-mono font-extrabold text-gray-900"
+                        id="sys-sw-flask">3.0.2</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1.5"><span
+                        class="text-gray-600 font-bold">Ultralytics YOLO</span><span
+                        class="font-extrabold text-gray-900" id="sys-sw-yolo">YOLOv26 – v8.3.1</span></div>
+                    <div class="flex justify-between"><span class="text-gray-600 font-bold">SQLite</span><span
+                        class="font-mono font-extrabold text-gray-900" id="sys-sw-sqlite">3.45.1</span></div>
+                  </div>
+                </section>
+
+                <!-- Deployment Card -->
+                <section class="occupai-card metric-card-light space-y-1.5">
+                  <div class="card-subtitle-maroon">DEPLOYMENT</div>
+                  <div class="space-y-2 text-sm sm:text-base font-bold">
+                    <div class="flex justify-between border-b border-gray-200 pb-1.5"><span
+                        class="text-gray-600 font-bold">Room</span><span class="font-extrabold text-gray-900"
+                        id="sys-dep-room">Room 313, CEA Building</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1.5"><span
+                        class="text-gray-600 font-bold">Primary Node</span><span class="font-extrabold text-gray-900"
+                        id="sys-dep-pnode">Raspberry Pi 4 Model B</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1.5"><span
+                        class="text-gray-600 font-bold">Secondary Node</span><span class="font-extrabold text-gray-900"
+                        id="sys-dep-snode">ESP32-S3 N16R8</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1.5"><span
+                        class="text-gray-600 font-bold">Network Mode</span><span class="font-extrabold text-gray-900"
+                        id="sys-dep-net">LAN-restricted, no internet</span></div>
+                    <div class="flex justify-between"><span class="text-gray-600 font-bold">MQTT Broker Host</span><span
+                        class="font-extrabold text-gray-900" id="sys-dep-mqtt">Raspberry Pi (local)</span></div>
+                  </div>
+                </section>
+              </div>
+
+              <!-- Row 2: Storage & Health Snapshot (2 Columns) -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- Storage Card -->
+                <section class="occupai-card metric-card-light space-y-1.5">
+                  <div class="card-subtitle-maroon">STORAGE</div>
+                  <div class="space-y-2 text-sm sm:text-base font-bold">
+                    <div class="flex justify-between border-b border-gray-200 pb-1.5"><span
+                        class="text-gray-600 font-bold">Database</span><span class="font-extrabold text-gray-900"
+                        id="sys-str-db">SQLite – local file</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1.5"><span
+                        class="text-gray-600 font-bold">Database Size</span><span class="font-extrabold text-gray-900"
+                        id="sys-str-size">18.4 MB</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1.5"><span
+                        class="text-gray-600 font-bold">Total Log Records</span><span
+                        class="font-extrabold text-gray-900" id="sys-str-records">4,812</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1.5"><span
+                        class="text-gray-600 font-bold">Network Mode</span><span class="font-extrabold text-gray-900"
+                        id="sys-str-mode">Aug 1, 2026</span></div>
+                    <div class="flex justify-between"><span class="text-gray-600 font-bold">Auto-purge
+                        Policy</span><span class="font-extrabold text-gray-900" id="sys-str-purge">Logs older than 180
+                        days</span></div>
+                  </div>
+                </section>
+
+                <!-- Health Snapshot Card -->
+                <section class="occupai-card metric-card-light space-y-1.5">
+                  <div class="card-subtitle-maroon">HEALTH SNAPSHOT</div>
+                  <div class="space-y-2 text-sm sm:text-base font-bold">
+                    <div class="flex justify-between border-b border-gray-200 pb-1.5"><span
+                        class="text-gray-600 font-bold">System Uptime</span><span class="font-extrabold text-gray-900"
+                        id="sys-hlth-uptime">4h 12m</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1.5"><span
+                        class="text-gray-600 font-bold">Nodes Online</span><span class="font-extrabold text-gray-900"
+                        id="sys-hlth-nodes">5 / 5</span></div>
+                    <div class="flex justify-between border-b border-gray-200 pb-1.5"><span
+                        class="text-gray-600 font-bold">Last Full Restart</span><span
+                        class="font-extrabold text-gray-900" id="sys-hlth-restart">Today, 9:00 AM</span></div>
+                    <div class="flex justify-between"><span class="text-gray-600 font-bold">Last Data Backup</span><span
+                        class="font-extrabold text-gray-900" id="sys-hlth-backup">Yesterday, 11:00 PM</span></div>
+                  </div>
+                </section>
+              </div>
+
+              <!-- Row 3: Privacy & Compliance (Full Width) -->
+              <section class="occupai-card metric-card-light space-y-1.5">
+                <div class="card-subtitle-maroon">PRIVACY & COMPLIANCE</div>
+                <div class="space-y-2 text-sm sm:text-base font-bold">
+                  <div class="border-b border-gray-200 pb-1.5">
+                    <div class="font-extrabold text-gray-900">Visual Data Handling</div>
+                    <div class="text-xs sm:text-sm text-gray-600 font-medium">Volatile memory only — frames discarded
+                      after inference</div>
+                  </div>
+                  <div class="border-b border-gray-200 pb-1.5">
+                    <div class="font-extrabold text-gray-900">Compliance Standard</div>
+                    <div class="text-xs sm:text-sm text-gray-600 font-medium">RA 10173 – Data Privacy Act of 2012</div>
+                  </div>
+                  <div>
+                    <div class="font-extrabold text-gray-900">Stored Data Types</div>
+                    <div class="text-xs sm:text-sm text-gray-600 font-medium">Numerical occupancy counts, timestamps,
+                      system logs only</div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Bottom Action Buttons (3 Buttons) -->
+              <div class="flex justify-end gap-2 pt-1">
+                <button
+                  class="px-5 py-2 rounded-full border border-[#7D141D] bg-[#7D141D] text-white text-xs sm:text-sm font-black shadow hover:bg-[#9B1C28]">
+                  ↓ Download Diagnostic Report
+                </button>
+                <button
+                  class="px-5 py-2 rounded-full border border-[#7D141D] bg-[#7D141D] text-white text-xs sm:text-sm font-black shadow hover:bg-[#9B1C28]">
+                  ↓ Export Full Database
+                </button>
+                <button
+                  class="px-5 py-2 rounded-full bg-gradient-to-r from-[#BF3700] to-[#7D141D] text-white text-xs sm:text-sm font-black shadow hover:opacity-90">
+                  ↺ Restart All Nodes
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- FIXED CURVED BOTTOM NAVIGATION BAR (Visible on mobile screens <= 767px) -->
+  <nav class="bottom-nav-bar md:hidden">
+    <button onclick="switchSPATab('dashboard')" class="nav-btn active" id="mob-nav-btn-dashboard" title="Dashboard">
+      <div class="nav-active-pill" id="mob-nav-pill-dashboard">
+        <i class="fas fa-border-all text-[#7D141D] text-xl"></i>
+      </div>
+    </button>
+    <button onclick="switchSPATab('controls')" class="nav-btn" id="mob-nav-btn-controls" title="Controls">
+      <div id="mob-nav-pill-controls">
+        <i class="fas fa-sliders text-white text-xl"></i>
+      </div>
+    </button>
+    <button onclick="switchSPATab('hardware')" class="nav-btn" id="mob-nav-btn-hardware-wrap" title="Hardware Status">
+      <div id="mob-nav-pill-hardware">
+        <i class="fas fa-certificate text-white text-xl"></i>
+      </div>
+    </button>
+    <button onclick="switchSPATab('history')" class="nav-btn" id="mob-nav-btn-history" title="History">
+      <div id="mob-nav-pill-history">
+        <i class="fas fa-clock-rotate-left text-white text-xl"></i>
+      </div>
+    </button>
+    <button onclick="switchSPATab('settings')" class="nav-btn" id="mob-nav-btn-settings" title="Settings">
+      <div id="mob-nav-pill-settings">
+        <i class="fas fa-gear text-white text-lg"></i>
+      </div>
+    </button>
+  </nav>
+
+  <!-- AUTHENTICATION MODAL OVERLAY (Reference Wireframe Match) -->
+  <div id="auth-modal-overlay" class="auth-modal-backdrop hidden">
+    <div class="auth-card-container">
+
+      <!-- LEFT BANNER PANEL (PUP Building Image + OccupAI Logo & Tagline) -->
+      <div class="auth-left-banner"
+        style="background-image: url('{{ url_for('static', filename='building_bg.jpg') }}');">
+        <div class="auth-banner-overlay"></div>
+        <div class="auth-banner-content">
+          <div class="auth-logo-wrap">
+            <svg class="auth-logo-svg" viewBox="0 0 48 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="19" y="8" width="10" height="14" rx="5" fill="#E53935" />
+              <rect x="22" y="14" width="4" height="2" rx="1" fill="white" />
+              <path d="M15 9C13.5 10.8 13.5 19.2 15 21" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <path d="M10 6C7.5 9 7.5 21 10 24" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <path d="M5 3C1.5 7 1.5 23 5 27" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <path d="M33 9C34.5 10.8 34.5 19.2 33 21" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <path d="M38 6C40.5 9 40.5 21 38 24" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <path d="M43 3C46.5 7 46.5 23 43 27" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+            </svg>
+            <span class="auth-logo-title">Occup<span class="auth-logo-accent">AI</span></span>
+          </div>
+          <p class="auth-tagline">Smart Occupancy & Utility Automation</p>
+        </div>
+      </div>
+
+      <!-- RIGHT FORM PANEL -->
+      <div class="auth-right-panel">
+        <button class="auth-close-btn" onclick="closeAuthModal()" title="Close Window">
+          <i class="fas fa-times"></i>
+        </button>
+
+        <!-- SCREEN 1: SET UP ACCOUNT (INVITATION VIEW) -->
+        <div id="auth-screen-setup" class="auth-screen hidden">
+          <div class="invite-notice-box">
+            <div class="invite-notice-title">You've been Invited to OccupAI</div>
+            <div class="invite-notice-sub" id="invite-notice-text">
+              Invited by <strong id="invite-by-name">J. Cruz</strong> (<span
+                id="invite-by-role">Administrator</span>)<br>
+              Role assigned: <strong id="invite-assigned-role">Faculty</strong>
+            </div>
+          </div>
+
+          <h2 class="auth-title">Set Up Account</h2>
+          <p class="auth-subtitle">Complete the fields below to activate access</p>
+
+          <form onsubmit="handleInviteAccountSetup(event)" class="auth-form">
+            <div class="form-group">
+              <input type="text" id="setup-fullname" class="auth-input" placeholder="Full Name" required>
+            </div>
+
+            <div class="form-group">
+              <input type="email" id="setup-email" class="auth-input bg-gray-100 cursor-not-allowed"
+                placeholder="Email (from invite)" value="j.doe@pup.edu.ph" readonly required>
+            </div>
+
+            <div class="form-group input-with-eye">
+              <input type="password" id="setup-password" class="auth-input" placeholder="Create password" required>
+              <button type="button" class="eye-toggle-btn"
+                onclick="togglePasswordVisibility('setup-password', 'eye-icon-setup-1')" tabIndex="-1">
+                <i class="far fa-eye" id="eye-icon-setup-1"></i>
+              </button>
+            </div>
+
+            <div class="form-group input-with-eye">
+              <input type="password" id="setup-confirm-password" class="auth-input" placeholder="Confirm password"
+                required>
+              <button type="button" class="eye-toggle-btn"
+                onclick="togglePasswordVisibility('setup-confirm-password', 'eye-icon-setup-2')" tabIndex="-1">
+                <i class="far fa-eye" id="eye-icon-setup-2"></i>
+              </button>
+            </div>
+
+            <button type="submit" class="auth-btn-primary">Create Account</button>
+            <div class="auth-hint-error hidden" id="setup-error-msg">* Passwords must match</div>
+          </form>
+
+          <div class="auth-footer-links mt-4 text-center">
+            Already have an account? <a href="#" onclick="switchAuthScreen('login')">Log In</a>
+          </div>
+        </div>
+
+        <!-- SCREEN 2: LOG IN -->
+        <div id="auth-screen-login" class="auth-screen">
+          <h2 class="auth-title">Log In</h2>
+          <p class="auth-subtitle">Enter your credentials to continue</p>
+
+          <form onsubmit="handleLoginSubmit(event)" class="auth-form">
+            <div class="form-group">
+              <input type="email" id="login-email" class="auth-input" placeholder="Email" required
+                value="j.cruz@pup.edu.ph">
+            </div>
+
+            <div class="form-group input-with-eye">
+              <input type="password" id="login-password" class="auth-input" placeholder="Password" required
+                value="password123">
+              <button type="button" class="eye-toggle-btn"
+                onclick="togglePasswordVisibility('login-password', 'eye-icon-login')" tabIndex="-1">
+                <i class="far fa-eye" id="eye-icon-login"></i>
+              </button>
+            </div>
+
+            <div class="form-row-between">
+              <label class="remember-me-label">
+                <input type="checkbox" id="login-remember" checked>
+                <span>Remember this device</span>
+              </label>
+              <a href="#" onclick="switchAuthScreen('forgot-step1')" class="forgot-link">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="auth-btn-primary">Log In</button>
+            <div class="auth-hint-error hidden" id="login-error-msg">* Invalid email or password</div>
+          </form>
+
+          <div class="auth-footer-links mt-4 text-center space-y-2">
+            <div>Have an invite link? <a href="#" onclick="switchAuthScreen('setup')">Set up your account</a></div>
+            <div class="or-divider">or</div>
+            <div><a href="#" onclick="handleStudentLogin()" class="student-login-link font-semibold">Log in as
+                Student</a></div>
+          </div>
+        </div>
+
+        <!-- SCREEN 3: LOGIN - VERIFY CODE (FORGOT PASSWORD STEP 1) -->
+        <div id="auth-screen-forgot-step1" class="auth-screen hidden">
+          <h2 class="auth-title">Forgot Password</h2>
+          <p class="auth-subtitle">Enter email to send code</p>
+
+          <form onsubmit="handleSendCodeSubmit(event)" class="auth-form mb-3">
+            <div class="form-group">
+              <input type="email" id="forgot-email" class="auth-input" placeholder="Email" required
+                value="j.cruz@pup.edu.ph">
+            </div>
+
+            <button type="submit" class="auth-btn-secondary" id="send-code-btn">Send Code</button>
+            <div class="resend-subtext">Didn't receive a code? <a href="#" onclick="handleResendCode()">Resend</a></div>
+          </form>
+
+          <div class="auth-section-divider">
+            <span>Enter code to verify</span>
+          </div>
+
+          <form onsubmit="handleVerifyCodeSubmit(event)" class="auth-form">
+            <div class="form-group">
+              <input type="text" id="forgot-code" class="auth-input text-center font-bold tracking-widest"
+                placeholder="Enter code" required value="123456">
+            </div>
+
+            <button type="submit" class="auth-btn-primary">Verify</button>
+            <div class="auth-hint-error hidden" id="verify-error-msg">* Incorrect code</div>
+          </form>
+
+          <div class="auth-footer-links mt-4 text-center">
+            <a href="#" onclick="switchAuthScreen('login')" class="text-sm"><i class="fas fa-arrow-left mr-1"></i> Back
+              to Log In</a>
+          </div>
+        </div>
+
+        <!-- SCREEN 4: LOGIN - CHANGE PASSWORD (FORGOT PASSWORD STEP 2) -->
+        <div id="auth-screen-forgot-step2" class="auth-screen hidden">
+          <h2 class="auth-title">Forgot Password</h2>
+          <p class="auth-subtitle">Enter new password</p>
+
+          <form onsubmit="handleChangePasswordSubmit(event)" class="auth-form">
+            <div class="form-group input-with-eye">
+              <input type="password" id="reset-new-password" class="auth-input" placeholder="Create new password"
+                required>
+              <button type="button" class="eye-toggle-btn"
+                onclick="togglePasswordVisibility('reset-new-password', 'eye-icon-reset-1')" tabIndex="-1">
+                <i class="far fa-eye" id="eye-icon-reset-1"></i>
+              </button>
+            </div>
+
+            <div class="form-group input-with-eye">
+              <input type="password" id="reset-confirm-password" class="auth-input" placeholder="Confirm new password"
+                required>
+              <button type="button" class="eye-toggle-btn"
+                onclick="togglePasswordVisibility('reset-confirm-password', 'eye-icon-reset-2')" tabIndex="-1">
+                <i class="far fa-eye" id="eye-icon-reset-2"></i>
+              </button>
+            </div>
+
+            <button type="submit" class="auth-btn-primary">Change Password</button>
+            <div class="auth-hint-error hidden" id="reset-error-msg">* Passwords must match</div>
+          </form>
+
+          <div class="auth-footer-links mt-4 text-center">
+            <a href="#" onclick="switchAuthScreen('login')" class="text-sm"><i class="fas fa-arrow-left mr-1"></i> Back
+              to Log In</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Controller -->
+  <script src="{{ url_for('static', filename='app.js') }}?v=2026"></script>
+</body>
+
+</html>
