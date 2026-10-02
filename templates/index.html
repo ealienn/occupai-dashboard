@@ -1651,9 +1651,9 @@
       <div class="auth-left-banner"
         style="background-image: url('{{ url_for('static', filename='building_bg.jpg') }}');">
         <div class="auth-banner-overlay"></div>
-        <div class="auth-banner-content">
-          <div class="auth-logo-wrap">
-            <svg class="auth-logo-svg" viewBox="0 0 48 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div class="auth-banner-content flex flex-col items-center justify-center text-center p-6 sm:p-8 z-10">
+          <div class="auth-logo-wrap flex flex-col items-center gap-2 mb-2">
+            <svg class="w-28 sm:w-36 h-16 sm:h-20 text-white" viewBox="0 0 48 30" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect x="19" y="8" width="10" height="14" rx="5" fill="#E53935" />
               <rect x="22" y="14" width="4" height="2" rx="1" fill="white" />
               <path d="M15 9C13.5 10.8 13.5 19.2 15 21" stroke="white" stroke-width="2.5" stroke-linecap="round" />
@@ -1663,9 +1663,9 @@
               <path d="M38 6C40.5 9 40.5 21 38 24" stroke="white" stroke-width="2.5" stroke-linecap="round" />
               <path d="M43 3C46.5 7 46.5 23 43 27" stroke="white" stroke-width="2.5" stroke-linecap="round" />
             </svg>
-            <span class="auth-logo-title">Occup<span class="auth-logo-accent">AI</span></span>
+            <span class="text-white font-black text-3xl sm:text-4xl tracking-tight">Occup<span class="text-white">AI</span></span>
           </div>
-          <p class="auth-tagline">Smart Occupancy & Utility Automation</p>
+          <p class="text-white font-extrabold text-base sm:text-lg tracking-wide opacity-95">Smart Occupancy & Utility Automation</p>
         </div>
       </div>
 
@@ -1677,51 +1677,51 @@
 
         <!-- SCREEN 1: SET UP ACCOUNT (INVITATION VIEW) -->
         <div id="auth-screen-setup" class="auth-screen hidden">
-          <div class="invite-notice-box">
-            <div class="invite-notice-title">You've been Invited to OccupAI</div>
-            <div class="invite-notice-sub" id="invite-notice-text">
+          <div class="invite-notice-box text-center p-3.5 sm:p-4 rounded-2xl shadow-md text-white mb-5" style="background: linear-gradient(135deg, #7c1a0e 0%, #b84918 55%, #d8681e 100%);">
+            <div class="font-black text-sm sm:text-base text-white tracking-wide">You’ve been invited to OccupAI!</div>
+            <div class="text-xs sm:text-sm font-bold text-amber-100/95 mt-1 leading-snug" id="invite-notice-text">
               Invited by <strong id="invite-by-name">J. Cruz</strong> (<span
                 id="invite-by-role">Administrator</span>)<br>
               Role assigned: <strong id="invite-assigned-role">Faculty</strong>
             </div>
           </div>
 
-          <h2 class="auth-title">Set Up Account</h2>
-          <p class="auth-subtitle">Complete the fields below to activate access</p>
+          <h2 class="auth-title text-2xl sm:text-3xl font-black text-[#5C0A0E] text-center">Set Up Account</h2>
+          <p class="auth-subtitle text-xs sm:text-sm font-extrabold text-[#8C3A3A] text-center mt-1 mb-5">Complete the fields below to activate access</p>
 
-          <form onsubmit="handleInviteAccountSetup(event)" class="auth-form">
+          <form onsubmit="handleInviteAccountSetup(event)" class="auth-form flex flex-col gap-3.5">
             <div class="form-group">
-              <input type="text" id="setup-fullname" class="auth-input" placeholder="Full Name" required>
+              <input type="text" id="setup-fullname" class="auth-input" placeholder="Name" required>
             </div>
 
             <div class="form-group">
-              <input type="email" id="setup-email" class="auth-input bg-gray-100 cursor-not-allowed"
+              <input type="email" id="setup-email" class="auth-input bg-gray-50 cursor-not-allowed"
                 placeholder="Email (from invite)" value="j.doe@pup.edu.ph" readonly required>
             </div>
 
             <div class="form-group input-with-eye">
-              <input type="password" id="setup-password" class="auth-input" placeholder="Create password" required>
+              <input type="password" id="setup-password" class="auth-input" placeholder="Enter Password" required>
               <button type="button" class="eye-toggle-btn"
                 onclick="togglePasswordVisibility('setup-password', 'eye-icon-setup-1')" tabIndex="-1">
-                <i class="far fa-eye" id="eye-icon-setup-1"></i>
+                <i class="far fa-eye text-rose-800/70" id="eye-icon-setup-1"></i>
               </button>
             </div>
 
             <div class="form-group input-with-eye">
-              <input type="password" id="setup-confirm-password" class="auth-input" placeholder="Confirm password"
+              <input type="password" id="setup-confirm-password" class="auth-input" placeholder="Confirm Password"
                 required>
               <button type="button" class="eye-toggle-btn"
                 onclick="togglePasswordVisibility('setup-confirm-password', 'eye-icon-setup-2')" tabIndex="-1">
-                <i class="far fa-eye" id="eye-icon-setup-2"></i>
+                <i class="far fa-eye text-rose-800/70" id="eye-icon-setup-2"></i>
               </button>
             </div>
 
-            <button type="submit" class="auth-btn-primary">Create Account</button>
-            <div class="auth-hint-error hidden" id="setup-error-msg">* Passwords must match</div>
+            <button type="submit" class="auth-btn-primary w-full py-3.5 rounded-full bg-[#7C1A0E] hover:bg-[#961f13] text-white font-black text-base shadow-md transition-all cursor-pointer">Sign Up</button>
+            <div class="auth-hint-error italic text-xs font-bold text-red-600 text-center mt-1 hidden" id="setup-error-msg">* Password did not match</div>
           </form>
 
-          <div class="auth-footer-links mt-4 text-center">
-            Already have an account? <a href="#" onclick="switchAuthScreen('login')">Log In</a>
+          <div class="auth-footer-links mt-5 text-center text-xs sm:text-sm font-semibold text-gray-600">
+            Already have an account? <a href="#" onclick="switchAuthScreen('login')" class="text-[#7C1A0E] font-extrabold underline">Log In</a>
           </div>
         </div>
 
